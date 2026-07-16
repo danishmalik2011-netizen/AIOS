@@ -259,7 +259,7 @@
         </p>
 
         <div class="hero__actions">
-          <a class="btn btn--primary btn--lg" href="downloads/AIOS%20Setup%201.2.2.exe" download>
+          <a class="btn btn--primary btn--lg" href="downloads/AIOS%20Setup%201.2.3.exe" download>
             <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
             <span>Download for Windows</span>
             <svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg>
@@ -502,11 +502,11 @@
             <img src="favicon.svg" alt="" width="64" height="64" />
           </span>
           <div>
-            <h3 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0;">AIOS Setup 1.2.2</h3>
+            <h3 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0;">AIOS Setup 1.2.3</h3>
             <p style="font-size: var(--text-sm); color: var(--text-tertiary); margin: var(--space-1) 0 0;">Windows 10/11 • Signed • Auto-updating</p>
           </div>
         </div>
-        <a class="btn btn--primary btn--lg" href="downloads/AIOS%20Setup%201.2.2.exe" download style="width: 100%; max-width: 320px; justify-content: center;">
+        <a class="btn btn--primary btn--lg" href="downloads/AIOS%20Setup%201.2.3.exe" download style="width: 100%; max-width: 320px; justify-content: center;">
           <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
           <span>Download Installer</span>
         </a>
@@ -523,6 +523,19 @@
       </header>
 
       <div class="changelog glass reveal">
+        <article class="changelog__entry">
+          <div class="changelog__ver">1.2.3</div>
+          <div class="changelog__body">
+            <h3>MCP tool servers, smarter fleet &amp; reliability</h3>
+            <ul class="changelog__list">
+              <li><strong>MCP tool servers.</strong> Connect external Model Context Protocol servers in Settings → MCP Servers so your agents gain real-world tools (browsers, databases, deploy hooks) — no recompile, zero new dependencies.</li>
+              <li><strong>Fleet respects your roster.</strong> "Run with Fleet" now uses each agent's configured provider/model from the Agent Roster (no silent local fallback) and can actually call tools during background runs.</li>
+              <li><strong>Focused multi-agent runs.</strong> CrewAI-style role backstories + contracts and LangGraph-style handoffs keep specialists in their lane; upstream context is now structured and summarized.</li>
+              <li><strong>Recovery &amp; transparency.</strong> Truncated/empty model replies auto-compact history and retry instead of dead-ending; a new Release Notes section in Settings summarizes every recent change.</li>
+            </ul>
+          </div>
+        </article>
+
         <article class="changelog__entry">
           <div class="changelog__ver">1.1.20</div>
           <div class="changelog__body">

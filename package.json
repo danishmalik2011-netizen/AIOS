@@ -1,7 +1,7 @@
 {
   "name": "aios",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "AI Agent Operating System — The single command center for AI-assisted software creation",
   "main": "dist-electron/main.cjs",
   "scripts": {

@@ -180,7 +180,7 @@
       if (typeof gtag !== 'undefined') {
         gtag('event', 'download', {
           event_category: 'engagement',
-          event_label: 'AIOS_Setup_1.2.2'
+          event_label: 'AIOS_Setup_1.2.3'
         });
       }
     });

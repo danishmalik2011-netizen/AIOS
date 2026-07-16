@@ -1,8 +1,8 @@
-version: 1.2.2
+version: 1.2.3
 files:
-  - url: AIOS Setup 1.2.2.exe
-    sha512: DF8wSVYluJm/J70qm0hLPF8v+B6CTVa3OhPIon4CtYx7nIMsddGolhQRGMF4ftPvjhyvJSwb0EZ+1eoagkX3NQ==
-    size: 91157839
-path: AIOS Setup 1.2.2.exe
-sha512: DF8wSVYluJm/J70qm0hLPF8v+B6CTVa3OhPIon4CtYx7nIMsddGolhQRGMF4ftPvjhyvJSwb0EZ+1eoagkX3NQ==
-releaseDate: '2026-07-14T20:48:06.540Z'
+  - url: AIOS Setup 1.2.3.exe
+    sha512: bZ8KbLJZvSOxfNJVjSOYp0M1oeHEIeGU6c1e1q/qBFMd5W6IZ6bc8MmlABt+1Wo+n9GLfabhZxbFa9A9EJy3jg==
+    size: 91172944
+path: AIOS Setup 1.2.3.exe
+sha512: bZ8KbLJZvSOxfNJVjSOYp0M1oeHEIeGU6c1e1q/qBFMd5W6IZ6bc8MmlABt+1Wo+n9GLfabhZxbFa9A9EJy3jg==
+releaseDate: '2026-07-16T15:54:00.000Z'
