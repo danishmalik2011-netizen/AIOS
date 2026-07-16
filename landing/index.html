@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AIOS — the AI Agent Operating System. One command center for AI-assisted software creation. Download the desktop app." />
+  <meta name="theme-color" content="#0d1018" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=1.0.3" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=1.0.3" />
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.ico?v=1.0.3" />
+  <link rel="apple-touch-icon" href="logo.png?v=1.0.3" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=1.0.3" />
+  <title>AIOS — AI Agent Operating System</title>
+</head>
+<body>
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3l1.8 4.5L18 9l-4.2 1.5L12 15l-1.8-4.5L6 9l4.2-1.5ZM18 14l.9 2.3L21 17l-2.1.7L18 20l-.9-2.3L15 17l2.1-.7Z"/>
+      </symbol>
+      <symbol id="i-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="8" width="16" height="11" rx="2.5"/>
+        <path d="M12 8V4M9 13h.01M15 13h.01M2.5 13h2M19.5 13h2M2.5 17h2M19.5 17h2"/>
+        <circle cx="12" cy="5" r="1.4"/>
+      </symbol>
+      <symbol id="i-workflow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="6" height="6" rx="1.5"/>
+        <rect x="15" y="15" width="6" height="6" rx="1.5"/>
+        <path d="M6 9v3a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-3"/>
+      </symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h6a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      </symbol>
+      <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="16" rx="2.5"/>
+        <path d="M7 9l3 3-3 3M13 15h4"/>
+      </symbol>
+      <symbol id="i-brain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-1 5 3 3 0 0 0 2 4.5A3 3 0 0 0 9 20a2.5 2.5 0 0 0 3-2.5V6.5A2.5 2.5 0 0 0 9 4zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 1 5 3 3 0 0 1-2 4.5A3 3 0 0 1 15 20a2.5 2.5 0 0 1-3-2.5V6.5A2.5 2.5 0 0 1 15 4z"/>
+      </symbol>
+      <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 5a2 2 0 0 1 2-2h5v16H6a2 2 0 0 0-2 2zM20 5a2 2 0 0 0-2-2h-5v16h5a2 2 0 0 1 2 2z"/>
+      </symbol>
+      <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="8" cy="8" r="4"/>
+        <path d="M11 11l8 8M16 16l2-2M19 19l2-2"/>
+      </symbol>
+      <symbol id="i-command" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 9a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v6a3 3 0 1 0 3-3H4a3 3 0 1 0 3 3z"/>
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14M13 6l6 6-6 6"/>
+      </symbol>
+      <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v12M7 11l5 5 5-5M5 21h14"/>
+      </symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+      </symbol>
+      <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+      </symbol>
+      <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 9l6 6 6-6"/>
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </symbol>
+      <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="4" width="16" height="16" rx="2"/>
+        <rect x="9" y="9" width="6" height="6" rx="1"/>
+        <path d="M9 1h1M9 23h1M1h1M23 1h1M1 9h1M23 9h1M1 15h1M23 15h1"/>
+      </symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20M12 2a15.3 15.3 0 0 0 0 20"/>
+      </symbol>
+      <symbol id="i-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+        <path d="M3 5v14c0 5.5 9 3 9 3s9-2.5 9-3V5"/>
+        <path d="M3 12c0 5.5 9 3 9 3s9-2.5 9-3"/>
+      </symbol>
+      <symbol id="i-git-branch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="6" cy="6" r="2.5"/>
+        <circle cx="18" cy="18" r="2.5"/>
+        <path d="M6 8.5v7M18 11.5V4M18 11.5c0 4-6 2-6 6.5"/>
+      </symbol>
+      <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+        <polyline points="22,6 12,13 2,6"/>
+      </symbol>
+      <symbol id="i-external-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <polyline points="15 3 21 3 21 9"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+      </symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+        <line x1="1" y1="1" x2="23" y2="23"/>
+      </symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </symbol>
+      <symbol id="i-unlock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        <line x1="12" y1="15" x2="12" y2="15.01"/>
+      </symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="6" x2="20" y2="6"/>
+        <line x1="4" y1="12" x2="20" y2="12"/>
+        <line x1="4" y1="18" x2="20" y2="18"/>
+      </symbol>
+      <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </symbol>
+      <symbol id="i-github" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <div class="page">
+    <!-- Navigation -->
+    <header class="nav" role="banner">
+      <div class="nav__inner">
+        <a href="/" class="brand" aria-label="AIOS Home">
+          <span class="brand__logo-wrap" aria-hidden="true">
+            <svg class="brand__logo" viewBox="0 0 200 200" width="36" height="36" fill="none" stroke="currentColor" style="display: block; width: 100%; height: 100%;">
+              {/* Static Center Core */}
+              <circle cx="100" cy="100" r="34" fill="var(--bg-primary, #0b0f19)" stroke="none" />
+              <circle cx="100" cy="100" r="28" stroke="currentColor" stroke-width="3.5" />
+              <circle cx="100" cy="100" r="34" stroke="currentColor" stroke-width="2.2" />
+              <text x="100" y="106" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="17.5" fill="currentColor" stroke="none" text-anchor="middle" letter-spacing="0.02em">AIOS</text>
+
+              {/* Rotating Outer Tech Ring & Spokes */}
+              <g stroke="currentColor">
+                {/* Outer double rings */}
+                <circle cx="100" cy="100" r="62" stroke-width="2.2" opacity="0.8" />
+                <circle cx="100" cy="100" r="68" stroke-width="1.5" opacity="0.5" />
+
+                {/* 8 Radial Spokes */}
+                <line x1="134" y1="100" x2="162" y2="100" stroke-width="2.2" />
+                <line x1="124.04" y1="124.04" x2="143.84" y2="143.84" stroke-width="2.2" />
+                <line x1="100" y1="134" x2="100" y2="162" stroke-width="2.2" />
+                <line x1="75.96" y1="124.04" x2="56.16" y2="143.84" stroke-width="2.2" />
+                <line x1="66" y1="100" x2="38" y2="100" stroke-width="2.2" />
+                <line x1="75.96" y1="75.96" x2="56.16" y2="56.16" stroke-width="2.2" />
+                <line x1="100" y1="66" x2="100" y2="38" stroke-width="2.2" />
+                <line x1="124.04" y1="75.96" x2="143.84" y2="56.16" stroke-width="2.2" />
+
+                {/* 8 Outer Nodes (Circle + Dot) */}
+                <g transform="translate(165, 100)">
+                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
+                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
+                </g>
+                <g transform="translate(145.96, 145.96)">
+                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
+                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
+                </g>
+                <g transform="translate(100, 165)">
+                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
+                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
+                </g>
+                <g transform="translate(54.04, 145.96)">
+                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
+                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
+                </g>
+                <g transform="translate(35, 100)">
+                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
+                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
+                </g>
+                <g transform="translate(54.04, 54.04)">
+                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
+                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
+                </g>
+                <g transform="translate(100, 35)">
+                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
+                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
+                </g>
+                <g transform="translate(145.96, 54.04)">
+                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
+                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
+                </g>
+              </g>
+            </svg>
+          </span>
+          <span class="brand__name"><svg class="brand__a" viewBox="40 40 120 120" aria-hidden="true"><path d="M66 146 L100 54 L134 146" fill="none" stroke="currentColor" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="brand__rest">IOS</span></span>
+        </a>
+
+        <nav class="nav__links" aria-label="Main navigation">
+          <a href="#features">Features</a>
+          <a href="#workspaces">Workspaces</a>
+          <a href="#changelog">What's New</a>
+          <a href="#download">Download</a>
+          <button class="nav__link nav__link--theme" id="theme-toggle" aria-label="Toggle theme" type="button">
+            <svg class="ico" aria-hidden="true"><use href="#i-sun" /></svg>
+            <svg class="ico" aria-hidden="true"><use href="#i-moon" /></svg>
+          </button>
+        </nav>
+
+        <a class="nav__cta" href="#download">
+          <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
+          <span>Download</span>
+        </a>
+
+        <button class="nav__menu" id="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
+          <svg class="ico" aria-hidden="true"><use href="#i-menu" /></svg>
+        </button>
+      </div>
+
+        <div class="nav__mobile" id="mobile-menu" aria-hidden="true">
+          <a href="#features">Features</a>
+          <a href="#workspaces">Workspaces</a>
+          <a href="#changelog">What's New</a>
+          <a href="#download">Download</a>
+          <a href="/privacy.html">Privacy Policy</a>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <main class="hero" role="main">
+      <div class="hero__glow" aria-hidden="true"></div>
+
+      <div class="hero__content reveal">
+        <span class="pill">
+          <svg class="ico" aria-hidden="true"><use href="#i-sparkles" /></svg>
+          <span>The AI Agent Operating System</span>
+        </span>
+
+        <h1 class="hero__title">
+          One command center for <span style="color: var(--accent-primary)">AI-assisted building</span>
+        </h1>
+
+        <p class="hero__sub">
+          AIOS treats agents as first-class citizens — they plan, build, review, test, and deploy,
+          coordinated through visual workflows and grounded in persistent project memory.
+          Not a wrapper. An operating system for software creation.
+        </p>
+
+        <div class="hero__actions">
+          <a class="btn btn--primary btn--lg" href="downloads/AIOS%20Setup%201.2.2.exe" download>
+            <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
+            <span>Download for Windows</span>
+            <svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg>
+          </a>
+          <a class="btn btn--ghost btn--lg" href="#workspaces">
+            <span>Explore Workspaces</span>
+            <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg>
+          </a>
+        </div>
+
+        <div class="hero__meta">
+          <span><svg class="ico" aria-hidden="true"><use href="#i-sparkles" /></svg> Real-time orchestration</span>
+          <span><svg class="ico" aria-hidden="true"><use href="#i-lock" /></svg> Local-first & private</span>
+          <span><svg class="ico" aria-hidden="true"><use href="#i-brain" /></svg> Multi-model agents</span>
+          <span><svg class="ico" aria-hidden="true"><use href="#i-git-branch" /></svg> Git-native workflows</span>
+        </div>
+      </div>
+
+      <!-- Interactive Mockup -->
+      <div class="mockup glass reveal" role="img" aria-label="AIOS desktop application preview">
+        <div class="mockup__header">
+          <div class="mockup__dots">
+            <span class="dot red" aria-hidden="true"></span>
+            <span class="dot yellow" aria-hidden="true"></span>
+            <span class="dot green" aria-hidden="true"></span>
+          </div>
+          <div class="mockup__tabs" role="tablist" aria-label="Application views">
+            <button class="mockup__tab mockup__tab--active" role="tab" aria-selected="true" data-view="dashboard">Mission Control</button>
+            <button class="mockup__tab" role="tab" aria-selected="false" data-view="agents">Agents</button>
+            <button class="mockup__tab" role="tab" aria-selected="false" data-view="workspaces">Workspaces</button>
+            <button class="mockup__tab" role="tab" aria-selected="false" data-view="terminal">Terminal</button>
+          </div>
+          <div class="mockup__window-title">AIOS — dev-mode</div>
+        </div>
+
+        <div class="mockup__body">
+          <!-- Dashboard View -->
+          <div class="mockup__view mockup__view--active" role="tabpanel" id="view-dashboard" aria-labelledby="tab-dashboard">
+            <div class="mockup__metrics">
+              <div class="m-card">
+                <span class="m-card__label">Active Agents</span>
+                <span class="m-card__value">4 <span class="m-card__pulse" aria-hidden="true"></span></span>
+              </div>
+              <div class="m-card">
+                <span class="m-card__label">Tasks Completed</span>
+                <span class="m-card__value">284</span>
+              </div>
+              <div class="m-card">
+                <span class="m-card__label">Lines Written</span>
+                <span class="m-card__value">14.2k</span>
+              </div>
+            </div>
+            <div class="mockup__activity">
+              <div class="m-activity__hdr">Live System Activity</div>
+              <pre class="m-log" aria-label="System activity log"><span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg></span> <span class="t-agent">[CodeSmith]</span> Implemented UserAuthService in <span class="t-path">auth/service.ts</span>
+<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg></span> <span class="t-agent">[Sentinel]</span> Code review passed, 0 vulnerabilities flagged
+<span class="t-info"><svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg></span> <span class="t-agent">[TestRunner]</span> Running test suites: 42/42 specs passed <span class="t-dim">(100% coverage)</span>
+<span class="t-prompt">aios <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cmd">monitoring pipelines...</span></pre>
+            </div>
+          </div>
+
+          <!-- Agents View -->
+          <div class="mockup__view" role="tabpanel" id="view-agents" aria-labelledby="tab-agents" hidden>
+            <div class="mockup__agents-grid">
+              <div class="a-card">
+                <span class="a-card__avatar" aria-hidden="true"><svg class="ico" style="width:20px;height:20px"><use href="#i-brain" /></svg></span>
+                <div class="a-card__info">
+                  <span class="a-card__name">Architect</span>
+                  <span class="a-card__status status-idle">Planning</span>
+                </div>
+              </div>
+              <div class="a-card a-card--active">
+                <span class="a-card__avatar" aria-hidden="true"><svg class="ico" style="width:20px;height:20px"><use href="#i-cpu" /></svg></span>
+                <div class="a-card__info">
+                  <span class="a-card__name">CodeSmith</span>
+                  <span class="a-card__status status-running">Running</span>
+                </div>
+              </div>
+              <div class="a-card">
+                <span class="a-card__avatar" aria-hidden="true"><svg class="ico" style="width:20px;height:20px"><use href="#i-shield" /></svg></span>
+                <div class="a-card__info">
+                  <span class="a-card__name">Sentinel</span>
+                  <span class="a-card__status status-idle">Review</span>
+                </div>
+              </div>
+            </div>
+            <div class="mockup__agent-chat">
+              <div class="chat-bubble user">Review the latest authentication handler</div>
+              <div class="chat-bubble assistant">Analyzed <span class="t-path">auth/service.ts</span>. Injecting safe session middleware. Verification complete.</div>
+            </div>
+          </div>
+
+          <!-- Workspaces View -->
+          <div class="mockup__view" role="tabpanel" id="view-workspaces" aria-labelledby="tab-workspaces" hidden>
+            <div class="w-setup">
+              <div class="w-input-row">
+                <span class="w-prompt">$ agy deploy --preset</span>
+                <span class="w-cmd-val">claude</span>
+              </div>
+              <button class="w-btn" type="button">Run Workspace</button>
+            </div>
+            <div class="w-status">Docker environment ready. Initializing isolated CLI terminals...</div>
+          </div>
+
+          <!-- Terminal View -->
+          <div class="mockup__view" role="tabpanel" id="view-terminal" aria-labelledby="tab-terminal" hidden>
+            <div class="t-grid">
+              <div class="t-pane">
+                <div class="t-pane-hdr">claude 1</div>
+                <pre class="t-pane-body"><span class="t-dim">claude-code starting...</span>
+<span class="t-dim">Logged in as user</span>
+<span class="t-prompt">agy <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cmd">ready</span></pre>
+              </div>
+              <div class="t-pane">
+                <div class="t-pane-hdr">claude 2</div>
+                <pre class="t-pane-body"><span class="t-dim">claude-code starting...</span>
+<span class="t-dim">Logged in as user</span>
+<span class="t-prompt">agy <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cmd">ready</span></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Stats -->
+    <section class="stats reveal" aria-labelledby="stats-title">
+      <h2 id="stats-title" class="visually-hidden">Key Metrics</h2>
+      <div class="stat glass">
+        <span class="stat__value">12+</span>
+        <span class="stat__label">Integrated surfaces</span>
+      </div>
+      <div class="stat glass">
+        <span class="stat__value">6</span>
+        <span class="stat__label">Agent roles</span>
+      </div>
+      <div class="stat glass">
+        <span class="stat__value">100%</span>
+        <span class="stat__label">Local execution</span>
+      </div>
+      <div class="stat glass">
+        <span class="stat__value">0</span>
+        <span class="stat__label">Telemetry</span>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="section reveal" aria-labelledby="features-title">
+      <header class="section__head reveal">
+        <span class="eyebrow">Core capabilities</span>
+        <h2 id="features-title" class="section__title">Built for how AI <em>actually</em> builds software</h2>
+        <p class="section__sub">Every surface is agent-addressable. Every action is reviewable. Every decision is traceable.</p>
+      </header>
+
+      <div class="features">
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-brain" /></svg></div>
+          <h3>Multi-model orchestration</h3>
+          <p>Claude, GPT-4, local models — routed automatically by task. No API keys in code. Agent-specific model selection per step.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-workflow" /></svg></div>
+          <h3>Visual workflow engine</h3>
+          <p>Drag-and-drop DAGs for agent pipelines. Parallel execution, conditional branching, human-in-the-loop gates, rollback points.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-folder" /></svg></div>
+          <h3>Persistent project memory</h3>
+          <p>Vector-indexed codebase, decisions, and docs. Agents retrieve context instantly — no re-reading files every turn.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-terminal" /></svg></div>
+          <h3>Native terminal integration</h3>
+          <p>Isolated Docker terminals per agent. Real-time stdout/stderr streaming. Shell, git, test runners — all agent-controllable.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-shield" /></svg></div>
+          <h3>Security by default</h3>
+          <p>Local-first, zero telemetry. Secrets never leave your machine. Sandboxed execution with capability-based permissions.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-git-branch" /></svg></div>
+          <h3>Git-native collaboration</h3>
+          <p>Every agent action is a commit. PRs auto-generated with summaries. Review, merge, revert — standard git workflow.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Workspaces -->
+    <section id="workspaces" class="section reveal" aria-labelledby="workspaces-title">
+      <header class="section__head reveal">
+        <span class="eyebrow">Workspaces</span>
+        <h2 id="workspaces-title" class="section__title">Isolated environments, <em>one command</em></h2>
+        <p class="section__sub">Spin up project-scoped workspaces with pre-configured agents, tools, and context. Share via reproducible config.</p>
+      </header>
+
+      <div class="features">
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-cpu" /></svg></div>
+          <h3>Preset templates</h3>
+          <p>Web, CLI, API, ML, mobile — one flag scaffolds the full agent team, docker config, and task queue.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-database" /></svg></div>
+          <h3>Shared context layer</h3>
+          <p>Workspaces share a project memory index. Agents across sessions pick up where others left off.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-globe" /></svg></div>
+          <h3>Portable configuration</h3>
+          <p>Export workspace as <code>agy.yaml</code> — version it, share it, CI it. Reproduce environments identically.</p>
+        </article>
+      </div>
+
+      <div class="cta glass reveal">
+        <div class="cta__content">
+          <span class="eyebrow" style="color: var(--accent-primary)">Try it now</span>
+          <h3 style="font-size: var(--text-2xl); font-weight: var(--font-extrabold); margin: var(--space-2) 0; color: var(--text-primary);">Deploy a workspace in seconds</h3>
+          <p style="color: var(--text-tertiary); margin-bottom: var(--space-4);">One command. Isolated Docker environment. Full agent team ready.</p>
+          <code style="display: inline-flex; align-items: center; gap: var(--space-2); background: var(--bg-primary); border: 1px solid var(--border-default); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--accent-primary);">$ agy deploy --preset claude</code>
+        </div>
+        <a class="btn btn--primary" href="#download">
+          <span>Download AIOS</span>
+          <svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- Download -->
+    <section id="download" class="download reveal" aria-labelledby="download-title">
+      <header class="section__head reveal" style="max-width: 600px; margin-bottom: var(--space-8);">
+        <span class="eyebrow">Get started</span>
+        <h2 id="download-title" class="section__title">Download AIOS for Windows</h2>
+        <p class="section__sub">Native desktop app. No browser dependencies. Automatic updates. One installer.</p>
+      </header>
+
+      <div class="download__card glass reveal">
+        <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4);">
+          <span class="download__logo-wrap" aria-hidden="true">
+            <img src="favicon.svg" alt="" width="64" height="64" />
+          </span>
+          <div>
+            <h3 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0;">AIOS Setup 1.2.2</h3>
+            <p style="font-size: var(--text-sm); color: var(--text-tertiary); margin: var(--space-1) 0 0;">Windows 10/11 • Signed • Auto-updating</p>
+          </div>
+        </div>
+        <a class="btn btn--primary btn--lg" href="downloads/AIOS%20Setup%201.2.2.exe" download style="width: 100%; max-width: 320px; justify-content: center;">
+          <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
+          <span>Download Installer</span>
+        </a>
+        <p class="download__note">By downloading, you agree to the <a href="/privacy.html" style="color: var(--accent-primary); text-decoration: underline;">Privacy Policy</a>. No telemetry. No account required.</p>
+      </div>
+    </section>
+
+    <!-- What's New / Changelog -->
+    <section id="changelog" class="section reveal" aria-labelledby="changelog-title">
+      <header class="section__head reveal">
+        <span class="eyebrow">What's new</span>
+        <h2 id="changelog-title" class="section__title">Shipped recently</h2>
+        <p class="section__sub">Continuous improvements to the agent operating system — here's what landed across the last few releases.</p>
+      </header>
+
+      <div class="changelog glass reveal">
+        <article class="changelog__entry">
+          <div class="changelog__ver">1.1.20</div>
+          <div class="changelog__body">
+            <h3>Fleet Director &amp; editable Agent Roster</h3>
+            <ul class="changelog__list">
+              <li><strong>Run with Fleet.</strong> A toggle in the Agents composer. The background Director decomposes your goal and routes each step to the right specialist — Architect plans, CodeSmith builds, Sentinel reviews, TestRunner tests, DeployBot ships.</li>
+              <li><strong>Shared + prior-agent context.</strong> Every agent in a run receives the same project brief and memory, plus the output of the agents before it, so the fleet builds on each other's work instead of working in silos.</li>
+              <li><strong>Offline by default.</strong> Routing is a deterministic intent classifier — no API key required. An optional LLM planning pass uses your active session's model when a key is present.</li>
+              <li><strong>Editable Agent Roster.</strong> In Account → Agent Roster, set each agent's provider and model from the same picker as the composer. Choices persist across updates.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="changelog__entry">
+          <div class="changelog__ver">1.1.19</div>
+          <div class="changelog__body">
+            <h3>Agent transparency</h3>
+            <ul class="changelog__list">
+              <li>Live "Thinking…" timer and a collapsible <strong>Work Summary</strong> of every tool step an agent took.</li>
+              <li>Composer context bar showing token usage, so you always know how much context a turn consumed.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="changelog__entry">
+          <div class="changelog__ver">1.1.18</div>
+          <div class="changelog__body">
+            <h3>Workflow orchestration &amp; canvas</h3>
+            <ul class="changelog__list">
+              <li>Visual DAG workflow engine with parallel execution and human-in-the-loop gates.</li>
+              <li>Agent Canvas (live plans &amp; artifacts), Follow Agent, and Auto Access (trust mode).</li>
+              <li>Multi-model orchestration with per-agent provider/model selection.</li>
+            </ul>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+      <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-6); margin-bottom: var(--space-4);">
+        <a href="/privacy.html" class="footer__link">Privacy Policy</a>
+        <a href="mailto:hello@aios.app" class="footer__link">Contact</a>
+          <a href="https://github.com/danishmalik2011-netizen/AIOS.git" target="_blank" rel="noopener" class="footer__link">
+          <svg class="ico" aria-hidden="true"><use href="#i-github" /></svg>
+          GitHub
+        </a>
+      </div>
+      <p class="footer__tag">AIOS — AI Agent Operating System</p>
+      <p class="footer__copy">Built with <svg class="ico" style="color: #ef4444" aria-hidden="true"><use href="#i-heart" /></svg> for developers who ship.</p>
+      <div class="footer__wordmark" aria-hidden="true">
+        <div class="footer__huge-logo"><svg class="footer__a" viewBox="40 40 120 120" aria-hidden="true"><path d="M66 146 L100 54 L134 146" fill="none" stroke="currentColor" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="footer__rest">IOS</span></div>
+        <div class="footer__huge-logo footer__reflection"><svg class="footer__a" viewBox="40 40 120 120" aria-hidden="true"><path d="M66 146 L100 54 L134 146" fill="none" stroke="currentColor" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="footer__rest">IOS</span></div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

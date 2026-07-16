@@ -1,0 +1,187 @@
+.account-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--space-6);
+  background: var(--bg-primary);
+  overflow-y: auto;
+}
+
+.account-view__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+  flex-shrink: 0;
+}
+
+.account-view__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.account-view__title-icon {
+  color: var(--accent-primary);
+}
+
+.account-view__title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.account-view__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: var(--space-6);
+}
+
+.account-view__card {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  justify-content: flex-start;
+}
+
+.account-view__avatar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.account-view__avatar {
+  font-size: 32px;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+}
+
+.account-view__username {
+  font-size: var(--text-md);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.account-view__user-id {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin: 4px 0 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  width: fit-content;
+}
+
+.account-view__user-id:hover {
+  color: var(--text-secondary);
+}
+
+.account-view__user-id code {
+  background: var(--bg-elevated);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.copied-icon {
+  color: var(--status-success);
+}
+
+.account-view__badge-row {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.account-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.account-card__title svg {
+  color: var(--accent-primary);
+}
+
+.billing-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--space-2);
+}
+
+.billing-stat:last-of-type {
+  border-bottom: none;
+}
+
+.billing-stat__label {
+  color: var(--text-tertiary);
+}
+
+.billing-stat__val {
+  color: var(--text-secondary);
+  font-weight: var(--font-medium);
+}
+
+/* Editable agent roster rows: name/role on the left, model picker on right. */
+.billing-stat--agent {
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.billing-stat__agent-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.billing-stat__role {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent, #7c5cff);
+}
+
+/* Limit Bar Progress */
+.limit-bar-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.limit-bar-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.limit-bar-track {
+  height: 6px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.limit-bar-fill {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+}

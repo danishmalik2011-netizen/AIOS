@@ -1,0 +1,59 @@
+/* ================================================
+   Modal — Glass-heavy centered overlay panel
+   ================================================ */
+
+.aios-modal-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  animation: fadeIn var(--duration-fast) var(--ease-out);
+}
+
+.aios-modal__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl), var(--shadow-glow);
+  animation: scaleInBounce var(--duration-slow) var(--ease-spring);
+  overflow: hidden;
+}
+
+.aios-modal__panel--sm { width: 380px; }
+.aios-modal__panel--md { width: 520px; }
+.aios-modal__panel--lg { width: 680px; }
+.aios-modal__panel--xl {
+  width: 960px;
+  height: 640px;
+  max-width: 90vw;
+  max-height: 85vh;
+}
+
+.aios-modal__close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+}
+
+.aios-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.aios-modal__title {
+  font-size: var(--text-md);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.aios-modal__body {
+  padding: var(--space-5);
+  overflow-y: auto;
+}

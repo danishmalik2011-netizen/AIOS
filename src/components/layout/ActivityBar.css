@@ -1,0 +1,141 @@
+/* ================================================
+   ActivityBar — VS Code-style vertical icon rail
+   ================================================ */
+
+.activity-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: var(--activity-bar-width);
+  min-width: var(--activity-bar-width);
+  height: 100%;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-subtle);
+  padding: 0 0 var(--space-2) 0; /* Remove top padding since logo acts as header */
+  z-index: var(--z-sticky);
+  user-select: none;
+}
+
+.activity-bar__logo-toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: var(--activity-bar-width);
+  height: 48px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: var(--space-1);
+}
+
+.activity-bar__logo-toggle-inner {
+  position: relative;
+  width: 32px;
+  height: 32px;
+}
+
+.activity-bar__logo-face,
+.activity-bar__toggle-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--duration-normal) var(--ease-spring),
+              opacity var(--duration-fast) var(--ease-default);
+  opacity: 0;
+  transform: scale(0.6) rotate(-45deg);
+}
+
+.activity-bar__logo-face--visible,
+.activity-bar__toggle-face--visible {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.activity-bar__logo-img {
+  width: 32px;
+  height: 32px;
+}
+
+.activity-bar__toggle-face {
+  color: var(--text-tertiary);
+}
+
+.activity-bar__logo-toggle:hover .activity-bar__toggle-face {
+  color: var(--accent-primary);
+}
+
+.activity-bar__top,
+.activity-bar__bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.activity-bar__button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--activity-bar-width);
+  height: var(--activity-bar-width);
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-default),
+              background var(--duration-normal) var(--ease-default);
+  outline: none;
+}
+
+.activity-bar__button:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.activity-bar__button:active {
+  background: var(--bg-active);
+}
+
+/* Active indicator — left accent border */
+.activity-bar__button--active {
+  color: var(--accent-primary);
+}
+
+.activity-bar__button--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Agent count badge dot */
+.activity-bar__badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-success);
+  box-shadow: 0 0 6px rgba(0, 212, 170, 0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.activity-bar__button:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--border-focus);
+}

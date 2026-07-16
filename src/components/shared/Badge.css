@@ -1,0 +1,23 @@
+/* ================================================
+   Badge — Pill-shaped status indicator
+   ================================================ */
+
+.aios-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  line-height: 1;
+}
+
+.aios-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.aios-badge__dot--default  { background: var(--text-tertiary); }
+.aios-badge__dot--accent   { background: var(--accent-primary); box-shadow: 0 0 6px var(--accent-glow); }
+.aios-badge__dot--success  { background: var(--status-success); box-shadow: 0 0 6px rgba(0,212,170,0.4); }
+.aios-badge__dot--warning  { background: var(--status-warning); box-shadow: 0 0 6px rgba(255,179,71,0.4); }
+.aios-badge__dot--error    { background: var(--status-error);   box-shadow: 0 0 6px rgba(255,107,107,0.4); }

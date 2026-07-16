@@ -1,0 +1,122 @@
+/* ================================================
+   StatusBar — 28px bottom information bar
+   ================================================ */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--status-bar-height);
+  min-height: var(--status-bar-height);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  user-select: none;
+  z-index: var(--z-sticky);
+}
+
+/* Sections */
+.status-bar__left,
+.status-bar__center,
+.status-bar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.status-bar__left   { flex: 1; justify-content: flex-start; }
+.status-bar__center { flex: 2; justify-content: center; }
+.status-bar__right  { flex: 1; justify-content: flex-end; }
+
+/* Items */
+.status-bar__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: default;
+  transition: color var(--duration-fast) var(--ease-default);
+}
+
+.status-bar__item:hover {
+  color: var(--text-primary);
+}
+
+.status-bar__sync {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Ticker */
+.status-bar__ticker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--accent-primary);
+  font-weight: var(--font-medium);
+}
+
+/* Agent dot */
+.status-bar__agent-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--status-success);
+  box-shadow: 0 0 6px rgba(0, 212, 170, 0.5);
+}
+
+/* Clickable keyboard shortcuts */
+.status-bar__kbd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: transparent;
+  border: none;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.status-bar__kbd-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.status-bar__kbd {
+  display: inline-block;
+  padding: 0.5px 4px;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: var(--font-bold);
+  line-height: 1;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Pulsing Agent Dot */
+.status-bar__agent-dot--pulse {
+  animation: pulse-dot 1.5s infinite var(--ease-default);
+}
+
+@keyframes pulse-dot {
+  0% {
+    opacity: 0.6;
+    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.2);
+  }
+  100% {
+    opacity: 0.6;
+    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4);
+  }
+}

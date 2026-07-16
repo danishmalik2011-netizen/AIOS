@@ -1,0 +1,63 @@
+/* ================================================
+   IconButton — Round/square icon-only button
+   ================================================ */
+
+.aios-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: all var(--duration-normal) var(--ease-default);
+  outline: none;
+  flex-shrink: 0;
+}
+
+.aios-icon-button:focus-visible {
+  box-shadow: 0 0 0 2px var(--border-focus);
+}
+
+/* ---- Sizes ---- */
+.aios-icon-button--sm  { width: 24px; height: 24px; border-radius: var(--radius-sm); }
+.aios-icon-button--md  { width: 32px; height: 32px; }
+.aios-icon-button--lg  { width: 40px; height: 40px; border-radius: var(--radius-lg); }
+
+/* ---- Variant: Default ---- */
+.aios-icon-button--default:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.aios-icon-button--default:active {
+  background: var(--bg-active);
+}
+
+/* ---- Variant: Ghost ---- */
+.aios-icon-button--ghost {
+  color: var(--text-tertiary);
+}
+
+.aios-icon-button--ghost:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+/* ---- Variant: Accent ---- */
+.aios-icon-button--accent {
+  color: var(--accent-primary);
+  background: var(--accent-muted);
+}
+
+.aios-icon-button--accent:hover {
+  background: rgba(124, 92, 255, 0.25);
+  box-shadow: var(--shadow-glow-sm);
+}
+
+/* ---- Active State ---- */
+.aios-icon-button--active {
+  color: var(--accent-primary) !important;
+  background: var(--accent-muted) !important;
+}

@@ -1,0 +1,97 @@
+/* ================================================
+   Tooltip — Premium glass tooltip (theme-proof)
+   ================================================ */
+
+.aios-tooltip-trigger {
+  position: relative;
+  display: inline-flex;
+}
+
+.aios-tooltip {
+  position: absolute;
+  z-index: var(--z-tooltip);
+  padding: var(--space-1) var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  /* Self-contained dark-glass bubble so the text is always readable,
+     regardless of the active theme. Using theme tokens here previously
+     produced dark text on a light background in the light/claude themes. */
+  color: #f1f5f9;
+  background: rgba(18, 18, 30, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  pointer-events: none;
+  line-height: 1.4;
+}
+
+/* Positions */
+.aios-tooltip--top {
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.aios-tooltip--bottom {
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.aios-tooltip--left {
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.aios-tooltip--right {
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Arrow */
+.aios-tooltip__arrow {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: rgba(18, 18, 30, 0.95);
+  border: 1px solid var(--border-default);
+  transform: rotate(45deg);
+}
+
+.aios-tooltip--top .aios-tooltip__arrow {
+  bottom: -4px;
+  left: 50%;
+  margin-left: -3px;
+  border-top: none;
+  border-left: none;
+}
+
+.aios-tooltip--bottom .aios-tooltip__arrow {
+  top: -4px;
+  left: 50%;
+  margin-left: -3px;
+  border-bottom: none;
+  border-right: none;
+}
+
+.aios-tooltip--left .aios-tooltip__arrow {
+  right: -4px;
+  top: 50%;
+  margin-top: -3px;
+  border-bottom: none;
+  border-left: none;
+}
+
+.aios-tooltip--right .aios-tooltip__arrow {
+  left: -4px;
+  top: 50%;
+  margin-top: -3px;
+  border-top: none;
+  border-right: none;
+}

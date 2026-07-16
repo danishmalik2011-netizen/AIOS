@@ -1,0 +1,100 @@
+src/components/command/CommandPalette.tsx(9,15): error TS2305: Module '"@/core/types"' has no exported member 'Command'.
+src/components/command/CommandPalette.tsx(9,24): error TS2305: Module '"@/core/types"' has no exported member 'SidebarView'.
+src/components/command/CommandPalette.tsx(42,42): error TS2345: Argument of type '() => ({ id: string; label: string; category: string; icon: string; shortcut: string | undefined; action: () => void; } | { id: string; label: string; category: string; icon: string; action: () => void; })[]' is not assignable to parameter of type '() => CommandDef[]'.
+  Type '({ id: string; label: string; category: string; icon: string; shortcut: string | undefined; action: () => void; } | { id: string; label: string; category: string; icon: string; action: () => void; })[]' is not assignable to type 'CommandDef[]'.
+    Type '{ id: string; label: string; category: string; icon: string; shortcut: string | undefined; action: () => void; } | { id: string; label: string; category: string; icon: string; action: () => void; }' is not assignable to type 'CommandDef'.
+      Type '{ id: string; label: string; category: string; icon: string; shortcut: string | undefined; action: () => void; }' has no properties in common with type 'CommandDef'.
+src/components/command/CommandPalette.tsx(85,55): error TS2339: Property 'label' does not exist on type 'CommandDef'.
+src/components/command/CommandPalette.tsx(85,66): error TS2339: Property 'category' does not exist on type 'CommandDef'.
+src/components/command/CommandPalette.tsx(111,24): error TS2339: Property 'action' does not exist on type 'CommandDef'.
+src/components/command/CommandPalette.tsx(172,24): error TS2339: Property 'id' does not exist on type 'CommandDef'.
+src/components/command/CommandPalette.tsx(176,36): error TS2339: Property 'action' does not exist on type 'CommandDef'.
+src/components/command/CommandPalette.tsx(178,62): error TS2339: Property 'icon' does not exist on type 'CommandDef'.
+src/components/command/CommandPalette.tsx(179,55): error TS2339: Property 'label' does not exist on type 'CommandDef'.
+src/components/command/CommandPalette.tsx(180,58): error TS2339: Property 'category' does not exist on type 'CommandDef'.
+src/components/command/CommandPalette.tsx(181,20): error TS2339: Property 'shortcut' does not exist on type 'CommandDef'.
+src/components/command/CommandPalette.tsx(181,78): error TS2339: Property 'shortcut' does not exist on type 'CommandDef'.
+src/components/dashboard/AgentActivityFeed.tsx(13,15): error TS2305: Module '"@/core/types"' has no exported member 'Agent'.
+src/components/dashboard/AgentActivityFeed.tsx(13,22): error TS2305: Module '"@/core/types"' has no exported member 'AgentRole'.
+src/components/dashboard/AgentActivityFeed.tsx(13,33): error TS2305: Module '"@/core/types"' has no exported member 'ActivityItem'.
+src/components/dashboard/ExecutionTimeline.tsx(3,15): error TS2305: Module '"@/core/types"' has no exported member 'AgentRole'.
+src/components/dashboard/MetricsCards.tsx(12,15): error TS2305: Module '"@/core/types"' has no exported member 'Agent'.
+src/components/dashboard/ProgressTracker.tsx(3,15): error TS2305: Module '"@/core/types"' has no exported member 'AgentStatus'.
+src/components/layout/ActivityBar.tsx(20,15): error TS2305: Module '"@/core/types"' has no exported member 'SidebarView'.
+src/components/layout/Sidebar.tsx(53,15): error TS2305: Module '"@/core/types"' has no exported member 'SidebarView'.
+src/components/layout/Sidebar.tsx(53,28): error TS2305: Module '"@/core/types"' has no exported member 'MemoryCategory'.
+src/components/layout/ViewRouter.tsx(6,15): error TS2305: Module '"@/core/types"' has no exported member 'SidebarView'.
+src/components/shared/AgentAvatar.tsx(2,15): error TS2305: Module '"@/core/types"' has no exported member 'AgentRole'.
+src/components/shared/ContextMenu.tsx(19,15): error TS2305: Module '"@/core/types"' has no exported member 'ProjectFile'.
+src/components/shared/Toaster.tsx(4,15): error TS2305: Module '"@/core/types"' has no exported member 'Notification'.
+src/components/shared/Toaster.tsx(16,16): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ success: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; info: ForwardRefExoticComponent<...>; warning: ForwardRefExoticComponent<...>; error: ForwardRefExoticComponent<...>; }'.
+src/components/views/AgentsView.tsx(66,15): error TS2305: Module '"@/core/types"' has no exported member 'ChatMessage'.
+src/components/views/AgentsView.tsx(66,28): error TS2305: Module '"@/core/types"' has no exported member 'CodeBlock'.
+src/components/views/AgentsView.tsx(66,39): error TS2305: Module '"@/core/types"' has no exported member 'ToolCall'.
+src/components/views/AgentsView.tsx(66,49): error TS2305: Module '"@/core/types"' has no exported member 'ProjectFile'.
+src/components/views/AgentsView.tsx(66,62): error TS2305: Module '"@/core/types"' has no exported member 'Agent'.
+src/components/views/AgentsView.tsx(66,81): error TS2305: Module '"@/core/types"' has no exported member 'AgentRole'.
+src/components/views/AgentsView.tsx(1513,53): error TS7006: Parameter 'tc' implicitly has an 'any' type.
+src/components/views/FilesView.tsx(19,15): error TS2305: Module '"@/core/types"' has no exported member 'ProjectFile'.
+src/components/views/FilesView.tsx(207,31): error TS7006: Parameter 'child' implicitly has an 'any' type.
+src/components/views/FilesView.tsx(354,34): error TS7006: Parameter 'crumb' implicitly has an 'any' type.
+src/components/views/FilesView.tsx(354,41): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/components/views/GitView.tsx(24,15): error TS2305: Module '"@/core/types"' has no exported member 'GitFileChange'.
+src/components/views/GitView.tsx(24,30): error TS2305: Module '"@/core/types"' has no exported member 'ProviderType'.
+src/components/views/GitView.tsx(72,44): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/components/views/GitView.tsx(168,26): error TS7006: Parameter 'path' implicitly has an 'any' type.
+src/components/views/GitView.tsx(191,15): error TS7006: Parameter 'f' implicitly has an 'any' type.
+src/components/views/GitView.tsx(283,30): error TS7006: Parameter 'change' implicitly has an 'any' type.
+src/components/views/GitView.tsx(312,32): error TS7006: Parameter 'change' implicitly has an 'any' type.
+src/components/views/MemoryView.tsx(29,15): error TS2305: Module '"@/core/types"' has no exported member 'MemoryEntry'.
+src/components/views/MemoryView.tsx(29,28): error TS2305: Module '"@/core/types"' has no exported member 'MemoryCategory'.
+src/components/views/MemoryView.tsx(353,39): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/components/views/PromptsView.tsx(21,15): error TS2305: Module '"@/core/types"' has no exported member 'PromptTemplate'.
+src/components/views/PromptsView.tsx(121,22): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/components/views/PromptsView.tsx(315,49): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/components/views/PromptsView.tsx(375,43): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/components/views/TerminalView.tsx(1137,37): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/components/views/WorkflowView.tsx(31,15): error TS2305: Module '"@/core/types"' has no exported member 'AgentStatus'.
+src/components/views/WorkflowView.tsx(31,28): error TS2305: Module '"@/core/types"' has no exported member 'WorkflowNodeData'.
+src/components/views/WorkflowView.tsx(31,46): error TS2305: Module '"@/core/types"' has no exported member 'WorkflowStatus'.
+src/components/workflow/WorkflowNode.tsx(16,15): error TS2305: Module '"@/core/types"' has no exported member 'AgentStatus'.
+src/components/workflow/WorkflowNode.tsx(16,28): error TS2305: Module '"@/core/types"' has no exported member 'WorkflowNodeData'.
+src/components/workflow/WorkflowNode.tsx(16,46): error TS2305: Module '"@/core/types"' has no exported member 'WorkflowNodeType'.
+src/core/types.ts(2,7): error TS2304: Cannot find name 'ProviderType'.
+src/core/types.ts(7,10): error TS2304: Cannot find name 'ProviderKind'.
+src/services/agentRuntime.ts(5,15): error TS2305: Module '"@/core/types"' has no exported member 'Agent'.
+src/services/agentRuntime.ts(5,22): error TS2305: Module '"@/core/types"' has no exported member 'ChatMessage'.
+src/services/agentRuntime.ts(5,35): error TS2305: Module '"@/core/types"' has no exported member 'ProviderType'.
+src/services/orchestration/workflowRunner.ts(7,15): error TS2305: Module '"@/core/types"' has no exported member 'WorkflowNodeData'.
+src/services/orchestration/workflowRunner.ts(7,33): error TS2305: Module '"@/core/types"' has no exported member 'Agent'.
+src/services/orchestration/workflowRunner.ts(7,40): error TS2305: Module '"@/core/types"' has no exported member 'AgentStatus'.
+src/services/orchestration/workflowRunner.ts(7,53): error TS2305: Module '"@/core/types"' has no exported member 'ProviderType'.
+src/services/providers/keyVault.ts(10,15): error TS2305: Module '"@/core/types"' has no exported member 'ProviderType'.
+src/services/providers/registry.ts(8,15): error TS2305: Module '"@/core/types"' has no exported member 'ProviderType'.
+src/services/providers/types.ts(8,15): error TS2305: Module '"@/core/types"' has no exported member 'ProviderType'.
+src/services/retrieval/index.ts(7,15): error TS2305: Module '"@/core/types"' has no exported member 'ProjectFile'.
+src/store/useAgentStore.ts(2,15): error TS2305: Module '"@/core/types"' has no exported member 'Agent'.
+src/store/useAgentStore.ts(2,22): error TS2305: Module '"@/core/types"' has no exported member 'AgentStatus'.
+src/store/useAgentStore.ts(2,35): error TS2305: Module '"@/core/types"' has no exported member 'ChatMessage'.
+src/store/useAgentStore.ts(2,48): error TS2305: Module '"@/core/types"' has no exported member 'AgentRole'.
+src/store/useChatStore.ts(3,15): error TS2305: Module '"@/core/types"' has no exported member 'ChatMessage'.
+src/store/useGitStore.ts(2,15): error TS2305: Module '"@/core/types"' has no exported member 'GitStatus'.
+src/store/useGitStore.ts(2,26): error TS2305: Module '"@/core/types"' has no exported member 'GitFileChange'.
+src/store/useGitStore.ts(2,41): error TS2305: Module '"@/core/types"' has no exported member 'GitCommit'.
+src/store/useGitStore.ts(88,50): error TS7006: Parameter 'f' implicitly has an 'any' type.
+src/store/useGitStore.ts(93,53): error TS7006: Parameter 'f' implicitly has an 'any' type.
+src/store/useGitStore.ts(108,48): error TS7006: Parameter 'f' implicitly has an 'any' type.
+src/store/useGitStore.ts(113,49): error TS7006: Parameter 'f' implicitly has an 'any' type.
+src/store/useMemoryStore.ts(3,15): error TS2305: Module '"@/core/types"' has no exported member 'MemoryEntry'.
+src/store/useMemoryStore.ts(3,28): error TS2305: Module '"@/core/types"' has no exported member 'MemoryCategory'.
+src/store/useMemoryStore.ts(49,30): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/store/useNotificationStore.ts(2,15): error TS2305: Module '"@/core/types"' has no exported member 'Notification'.
+src/store/useProjectStore.ts(2,15): error TS2305: Module '"@/core/types"' has no exported member 'ProjectFile'.
+src/store/usePromptStore.ts(3,15): error TS2305: Module '"@/core/types"' has no exported member 'PromptTemplate'.
+src/store/useSettingsStore.ts(3,15): error TS2305: Module '"@/core/types"' has no exported member 'AppSettings'.
+src/store/useSettingsStore.ts(3,40): error TS2305: Module '"@/core/types"' has no exported member 'SidebarView'.
+src/store/useSettingsStore.ts(3,53): error TS2305: Module '"@/core/types"' has no exported member 'UpdateStatusPayload'.
+src/store/useTerminalStore.ts(2,15): error TS2305: Module '"@/core/types"' has no exported member 'TerminalSession'.
+src/store/useWorkflowStore.ts(2,15): error TS2305: Module '"@/core/types"' has no exported member 'WorkflowNodeData'.
+src/store/useWorkflowStore.ts(2,33): error TS2305: Module '"@/core/types"' has no exported member 'WorkflowStatus'.

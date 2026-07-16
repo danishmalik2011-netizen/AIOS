@@ -1,0 +1,16 @@
+node_modules/
+dist/
+dist-electron/
+release/
+scratch/
+*.local
+.DS_Store
+
+# Build/deploy artifacts (installers mirrored to Vercel landing, not source)
+landing/downloads/*.exe
+landing/downloads/*.blockmap
+
+# Stray logs
+*.log
+_tc_renderer.txt
+tc_renderer.log

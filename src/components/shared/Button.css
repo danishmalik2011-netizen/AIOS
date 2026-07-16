@@ -1,0 +1,149 @@
+/* ================================================
+   Button — Premium dark-theme button component
+   ================================================ */
+
+.aios-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-weight: var(--font-medium);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: all var(--duration-normal) var(--ease-default);
+  outline: none;
+}
+
+.aios-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.25);
+}
+
+/* ---- Sizes ---- */
+.aios-button--sm {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  height: 28px;
+  border-radius: var(--radius-sm);
+}
+
+.aios-button--md {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  height: 34px;
+}
+
+.aios-button--lg {
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-base);
+  height: 40px;
+  border-radius: var(--radius-lg);
+}
+
+/* ---- Variant: Primary ---- */
+.aios-button--primary {
+  background: var(--gradient-primary);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.aios-button--primary:hover:not(:disabled) {
+  box-shadow: var(--shadow-glow), var(--shadow-md);
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+.aios-button--primary:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+/* ---- Variant: Secondary (Glass) ---- */
+.aios-button--secondary {
+  background: rgba(24, 24, 40, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.aios-button--secondary:hover:not(:disabled) {
+  background: rgba(30, 30, 50, 0.7);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.aios-button--secondary:active:not(:disabled) {
+  transform: translateY(0);
+  background: rgba(36, 36, 60, 0.8);
+}
+
+/* ---- Variant: Ghost ---- */
+.aios-button--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: transparent;
+}
+
+.aios-button--ghost:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.aios-button--ghost:active:not(:disabled) {
+  background: var(--bg-active);
+}
+
+/* ---- Variant: Danger ---- */
+.aios-button--danger {
+  background: var(--gradient-danger);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.aios-button--danger:hover:not(:disabled) {
+  box-shadow: 0 0 20px rgba(255, 107, 107, 0.3), var(--shadow-md);
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+.aios-button--danger:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+/* ---- Disabled ---- */
+.aios-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ---- Icon ---- */
+.aios-button__icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 1em;
+}
+
+/* ---- Spinner ---- */
+.aios-button__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ---- Loading ---- */
+.aios-button--loading {
+  pointer-events: none;
+}
