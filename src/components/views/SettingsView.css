@@ -883,7 +883,7 @@
 }
 
 .about-update__status--available {
-  color: var(--accent, #5b9dff);
+  color: var(--accent);
   font-weight: 600;
 }
 
@@ -904,13 +904,13 @@
   max-width: 320px;
   height: 6px;
   border-radius: 999px;
-  background: var(--surface-3, rgba(255, 255, 255, 0.08));
+  background: var(--surface-3);
   overflow: hidden;
 }
 
 .about-update__progressbar-fill {
   height: 100%;
-  background: var(--accent, #5b9dff);
+  background: var(--accent);
   transition: width 0.2s ease;
 }
 

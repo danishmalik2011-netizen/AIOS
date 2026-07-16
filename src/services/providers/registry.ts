@@ -13,7 +13,45 @@ import { anthropicDriver } from './anthropic';
 import { openaiDriver } from './openai';
 import { ollamaDriver } from './ollama';
 import { createOpenAICompatibleDriver } from './openaiCompatible';
+import { ProviderError } from './types';
 import { useSettingsStore } from '@/store/useSettingsStore';
+
+/**
+ * Transient provider failures that should be retried automatically instead of
+ * surfacing a hard error to the user. The agent loop already tightens the
+ * context window on a 400 overflow, but a bare "Provider error 400: Provider
+ * returned error" can also be a transient rate-limit / overloaded gateway or a
+ * momentary blip — retrying with backoff makes those disappear silently.
+ */
+const TRANSIENT_RE = /provider returned error|provider error|rate.?limit|too many requests|overloaded|capacity|temporarily unavailable|try again|service unavailable|upstream|bad gateway|gateway timeout|connection|timeout|econnreset|socket|epipe|\b500\b|\b502\b|\b503\b|\b504\b|\b429\b/i;
+
+function isTransient(e: unknown): boolean {
+  if (!(e instanceof ProviderError)) return false;
+  if (e.status === 429 || (e.status != null && e.status >= 500)) return true;
+  // A 400 with generic wording is, in practice, a transient overload/blip for
+  // many OpenAI-compatible gateways — retry it (the caller's overflow
+  // tightening already handles genuine context-length 400s separately).
+  if (e.status === 400 && TRANSIENT_RE.test(e.message)) return true;
+  return TRANSIENT_RE.test(e.message);
+}
+
+const MAX_RETRIES = 3;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (!isTransient(e) || attempt === MAX_RETRIES) break;
+      // Exponential backoff: 800ms, 1.6s, 3.2s.
+      await sleep(800 * Math.pow(2, attempt));
+    }
+  }
+  throw lastErr;
+}
 
 /** Cache one generic OpenAI-compatible driver per custom provider id. */
 const compatibleCache = new Map<string, ProviderDriver>();
@@ -128,7 +166,7 @@ export async function complete(
   opts?: StreamCallbacks & { preferred?: ProviderType; strict?: boolean },
 ): Promise<CompletionResult> {
   const driver = await resolveDriver(opts?.preferred, opts?.strict);
-  return await driver.complete(req, opts);
+  return await withRetry(() => driver.complete(req, opts));
 }
 
 export type { ProviderDriver, CompletionRequest, CompletionResult } from './types';

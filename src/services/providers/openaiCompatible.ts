@@ -34,6 +34,46 @@ function genId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+/**
+ * Guarantee a tool-call's `arguments` is valid, provider-safe JSON. Streamed
+ * argument fragments are occasionally truncated or contain control characters,
+ * which many OpenAI-compatible gateways reject with a bare 400 ("Provider
+ * returned error"). Repair where possible (strip control chars, balance braces)
+ * and fall back to `{}` so the request never dies on malformed arguments.
+ */
+export function sanitizeToolArgs(raw: string | undefined): string {
+  const src = (raw ?? '').trim();
+  if (!src) return '{}';
+  try {
+    JSON.parse(src);
+    return src;
+  } catch {
+    /* fall through to repair */
+  }
+  // Strip control characters that break JSON parsing, then drop a trailing
+  // comma before a closing brace (a common streaming artifact).
+  const cleaned = src
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .replace(/,\s*}/g, '}')
+    .replace(/,\s*]/g, ']');
+  try {
+    JSON.parse(cleaned);
+    return cleaned;
+  } catch {
+    /* still invalid — attempt brace balancing */
+  }
+  const open = (cleaned.match(/{/g) || []).length;
+  const close = (cleaned.match(/}/g) || []).length;
+  let balanced = cleaned;
+  if (open > close) balanced = cleaned + '}'.repeat(open - close);
+  try {
+    JSON.parse(balanced);
+    return balanced;
+  } catch {
+    return '{}';
+  }
+}
+
 /* Map normalized messages to OpenAI Chat Completions format. Assistant tool
    calls become `tool_calls`; tool results become `role: 'tool'` messages. */
 function toOpenAIMessages(messages: ProviderMessage[]): Array<Record<string, unknown>> {
@@ -46,9 +86,9 @@ function toOpenAIMessages(messages: ProviderMessage[]): Array<Record<string, unk
         role: 'assistant',
         content: m.content || null,
         tool_calls: m.toolCalls.map((tc) => ({
-          id: tc.id,
+          id: tc.id || `call_${genId()}`,
           type: 'function',
-          function: { name: tc.name, arguments: tc.arguments || '{}' },
+          function: { name: tc.name, arguments: sanitizeToolArgs(tc.arguments) },
         })),
       };
     }
@@ -207,14 +247,18 @@ export function createOpenAICompatibleDriver(config: CompatibleConfig): Provider
           if (choice?.finish_reason) finishReason = choice.finish_reason;
         }
 
-        const toolCalls: ProviderToolCall[] = [...toolAccum.values()].map((t) => ({
-          // Some providers omit/stream the tool-call id late; a missing id would
-          // produce an empty `tool_call_id` downstream (a hard 400 from the API).
-          // Always guarantee a non-empty id so the pairing stays valid.
-          id: t.id || `call_${genId()}`,
-          name: t.name,
-          arguments: t.args || '{}',
-        }));
+        // Drop streamed tool calls that never received a name/args — sending a
+        // `function` with no name is a hard 400 from compliant providers.
+        const toolCalls: ProviderToolCall[] = [...toolAccum.values()]
+          .filter((t) => t.name)
+          .map((t) => ({
+            // Some providers omit/stream the tool-call id late; a missing id would
+            // produce an empty `tool_call_id` downstream (a hard 400 from the API).
+            // Always guarantee a non-empty id so the pairing stays valid.
+            id: t.id || `call_${genId()}`,
+            name: t.name,
+            arguments: sanitizeToolArgs(t.args),
+          }));
 
         return {
           content,

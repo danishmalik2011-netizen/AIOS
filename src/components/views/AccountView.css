@@ -155,7 +155,7 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--accent, #7c5cff);
+  color: var(--accent);
 }
 
 /* Limit Bar Progress */

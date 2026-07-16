@@ -51,6 +51,7 @@ import {
   Clock,
   Wrench,
   Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import { useChatStore, getSessionById, type ChatSession, DEFAULT_PROJECT_ID } from '@/store/useChatStore';
 import { useAgentStore } from '@/store/useAgentStore';
@@ -2381,6 +2382,59 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
     }
   };
 
+  /**
+   * Regenerate the assistant's response for a given message: cut the thread
+   * back to just before that assistant message (keeping the user prompt that
+   * produced it) and re-run the turn from there.
+   */
+  const handleRegenerate = (messageId: string) => {
+    if (!activeSession) return;
+    const targetSessionId = activeSession.id;
+    const idx = activeSession.messages.findIndex((m) => m.id === messageId);
+    if (idx === -1) return;
+    // Find the user prompt that preceded this assistant message.
+    let promptIdx = -1;
+    for (let i = idx - 1; i >= 0; i--) {
+      if (activeSession.messages[i].role === 'user') {
+        promptIdx = i;
+        break;
+      }
+    }
+    if (promptIdx === -1) return;
+
+    const clean = activeSession.messages.slice(0, promptIdx + 1);
+    const promptText = clean[promptIdx].content;
+    const promptFiles = clean[promptIdx].files ?? [];
+    useChatStore.setState((s) => ({
+      sessions: s.sessions.map((x) =>
+        x.id === targetSessionId ? { ...x, messages: clean } : x,
+      ),
+    }));
+    setErrorState(null);
+
+    const runTurn = () => {
+      // Only regenerate if the user is still on the same conversation — if they
+      // navigated away, drop the request instead of hijacking another chat.
+      if (activeSessionId !== targetSessionId) return;
+      void submitTurn(promptText, promptFiles);
+    };
+
+    if (isGenerating || runOf(targetSessionId).isSending) {
+      // Wait for the in-flight turn to free up, then regenerate.
+      const timer = window.setInterval(() => {
+        const busy =
+          useRunStore.getState().ui[targetSessionId]?.isGenerating ||
+          runOf(targetSessionId).isSending;
+        if (!busy) {
+          window.clearInterval(timer);
+          runTurn();
+        }
+      }, 300);
+      return;
+    }
+    runTurn();
+  };
+
   // Persist a session field when the composer selectors change.
   const patchActiveSession = useCallback(
     (patch: Partial<ChatSession>) => {
@@ -2728,6 +2782,12 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
 
                 const msgAgent = agents.find((a) => a.id === message.agentId);
                 const isAssistant = message.role === 'assistant';
+                const messagesIdx = activeSession.messages.findIndex((m) => m.id === message.id);
+                // Regenerate is only meaningful when a user prompt precedes this reply.
+                const hasPriorUser = activeSession.messages
+                  .slice(0, messagesIdx)
+                  .some((m) => m.role === 'user');
+
 
                 return (
                   <article
@@ -2753,7 +2813,11 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                           </span>
                         )}
                       </div>
-                      <div className="chat-msg__bubble">
+                      <div
+                        className={`chat-msg__bubble${
+                          isAssistant && message.status === 'error' ? ' chat-msg__bubble--error' : ''
+                        }`}
+                      >
                         <MessageContent message={message} />
 
                         {/* Work summary — collapsible steps/tools the agent used. */}
@@ -2776,6 +2840,26 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                           >
                             <DuplicateIcon size={12} /> Copy
                           </button>
+                          {hasPriorUser && message.status !== 'streaming' && (
+                            <button
+                              type="button"
+                              className="chat-msg__action"
+                              title="Regenerate this response"
+                              onClick={() => handleRegenerate(message.id)}
+                            >
+                              <RefreshCw size={12} /> Regenerate
+                            </button>
+                          )}
+                          {message.status === 'error' && (
+                            <button
+                              type="button"
+                              className="chat-msg__action chat-msg__action--retry"
+                              title="Retry this turn"
+                              onClick={() => handleRegenerate(message.id)}
+                            >
+                              <RefreshCw size={12} /> Retry
+                            </button>
+                          )}
                           <button
                             type="button"
                             className="chat-msg__action"

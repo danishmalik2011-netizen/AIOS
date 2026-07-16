@@ -7,6 +7,7 @@ import type {
 import { ProviderError } from './types';
 import { getApiKey, hasApiKey } from './keyVault';
 import { parseSSE } from './sse';
+import { sanitizeToolArgs } from './openaiCompatible';
 
 /** Generate a provider-safe unique id for tool calls whose streamed id is missing. */
 function genId(): string {
@@ -32,7 +33,7 @@ function toOpenAIMessages(messages: ProviderMessage[]): Array<Record<string, unk
         tool_calls: m.toolCalls.map((tc) => ({
           id: tc.id,
           type: 'function',
-          function: { name: tc.name, arguments: tc.arguments || '{}' },
+          function: { name: tc.name, arguments: sanitizeToolArgs(tc.arguments) },
         })),
       };
     }
@@ -157,14 +158,18 @@ export const openaiDriver: ProviderDriver = {
       if (choice?.finish_reason) finishReason = choice.finish_reason;
     }
 
-    const toolCalls: ProviderToolCall[] = [...toolAccum.values()].map((t) => ({
-      // Some providers omit/stream the tool-call id late; a missing id would
-      // produce an empty `tool_call_id` downstream (a hard 400 from the API).
-      // Always guarantee a non-empty id so the pairing stays valid.
-      id: t.id || `call_${genId()}`,
-      name: t.name,
-      arguments: t.args || '{}',
-    }));
+    // Drop streamed tool calls that never received a name — sending a
+    // `function` with no name is a hard 400 from compliant providers.
+    const toolCalls: ProviderToolCall[] = [...toolAccum.values()]
+      .filter((t) => t.name)
+      .map((t) => ({
+        // Some providers omit/stream the tool-call id late; a missing id would
+        // produce an empty `tool_call_id` downstream (a hard 400 from the API).
+        // Always guarantee a non-empty id so the pairing stays valid.
+        id: t.id || `call_${genId()}`,
+        name: t.name,
+        arguments: sanitizeToolArgs(t.args),
+      }));
 
     return {
       content,
