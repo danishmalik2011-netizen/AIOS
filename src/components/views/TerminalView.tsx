@@ -492,10 +492,20 @@ function TerminalPane({
 
     // Read the clipboard, then stage/paste it. Used by Ctrl+V and menu Paste.
     const pasteFromClipboard = () => {
-      navigator.clipboard
-        .readText()
-        .then((text) => handleIncomingPaste(text))
-        .catch(() => toast.error('Paste failed', 'Clipboard access denied.'));
+      if ((window as any).aios?.clipboard) {
+        try {
+          const text = (window as any).aios.clipboard.readText();
+          handleIncomingPaste(text);
+        } catch (e: any) {
+          console.error("Native paste failed:", e);
+          toast.error('Paste failed', 'Could not read from clipboard.');
+        }
+      } else {
+        navigator.clipboard
+          .readText()
+          .then((text) => handleIncomingPaste(text))
+          .catch(() => toast.error('Paste failed', 'Clipboard access denied.'));
+      }
     };
     clipboardPasteRef.current = pasteFromClipboard;
 

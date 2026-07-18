@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, clipboard } from 'electron';
 import { CHANNELS } from './ipc/channels.js';
 import type { FsSearchMatch, FsSearchOptions } from './ipc/fs.js';
 
@@ -31,6 +31,7 @@ const api = {
       ipcRenderer.on('fs:tree-changed', handler);
       return () => ipcRenderer.removeListener('fs:tree-changed', handler);
     },
+    zipProject: (rootPath: string): Promise<string | null> => ipcRenderer.invoke('fs:zipProject', rootPath),
   },
 
   git: {
@@ -92,6 +93,11 @@ const api = {
       ipcRenderer.on('updater:status', handler);
       return () => ipcRenderer.removeListener('updater:status', handler);
     },
+  },
+
+  clipboard: {
+    readText: (): string => clipboard.readText(),
+    writeText: (text: string): void => clipboard.writeText(text),
   },
 };
 

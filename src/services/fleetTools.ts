@@ -78,6 +78,45 @@ export async function executeFleetTool(
       if (!ok) throw new Error('Failed to write file.');
       return `Successfully wrote ${content.length} characters to ${p}`;
     }
+    case 'patch_file': {
+      const p = str(args.path);
+      const oldStr = str(args.old_str);
+      const newStr = str(args.new_str);
+      if (!p) throw new Error('Missing file path parameter.');
+
+      let original = '';
+      try {
+        original = await window.aios.fs.readFile(root, p, { numbered: false });
+      } catch (err: any) {
+        throw new Error(`Could not read file for patching: ${err.message}`);
+      }
+
+      if (!original.includes(oldStr)) {
+        throw new Error(`Could not find old_str in ${p}. Check if formatting matches exactly.`);
+      }
+
+      const patched = original.replace(oldStr, newStr);
+      const ok = await window.aios.fs.writeFile(root, p, patched);
+      if (!ok) throw new Error('Failed to write patched file.');
+      return `Successfully patched ${p}`;
+    }
+    case 'append_file': {
+      const p = str(args.path);
+      const content = str(args.content);
+      if (!p) throw new Error('Missing file path parameter.');
+
+      let original = '';
+      try {
+        original = await window.aios.fs.readFile(root, p, { numbered: false });
+      } catch {
+        original = '';
+      }
+
+      const combined = original ? original + '\n' + content : content;
+      const ok = await window.aios.fs.writeFile(root, p, combined);
+      if (!ok) throw new Error('Failed to append to file.');
+      return `Successfully appended to ${p}`;
+    }
     case 'run_command': {
       const command = str(args.command);
       if (!command) throw new Error('Missing command parameter.');

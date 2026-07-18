@@ -61,11 +61,20 @@ let cache: KeyMap = readLocalStorageMap();
 
 async function hydrateFromElectron(): Promise<void> {
   if (typeof window === 'undefined' || !window.aios) return;
-  // Read secrets for every configured provider (built-ins + custom ones the
-  // user added), not just a hardcoded list, so custom provider keys survive.
-  const providers: ProviderType[] = useSettingsStore.getState().providers.map((p) => p.id);
+  const configuredProviders = useSettingsStore.getState().providers.map((p) => p.id);
+  const allKeys = Array.from(new Set([
+    ...configuredProviders,
+    'anthropic',
+    'openai',
+    'openrouter',
+    'ollama',
+    'groq',
+    'gemini',
+    'google',
+  ]));
+
   const entries = await Promise.all(
-    providers.map(async (p) => [p, await window.aios!.secrets.get(p)] as const),
+    allKeys.map(async (p) => [p, await window.aios!.secrets.get(p)] as const),
   );
   const next: KeyMap = { ...cache };
   for (const [provider, value] of entries) {
@@ -74,7 +83,20 @@ async function hydrateFromElectron(): Promise<void> {
   cache = next;
 }
 
+// Initial hydration
 void hydrateFromElectron();
+
+// Subscribe to store updates to keep keys in sync when providers are configured
+if (typeof window !== 'undefined') {
+  let lastProviderIds = '';
+  useSettingsStore.subscribe((state) => {
+    const ids = state.providers.map((p) => p.id).join(',');
+    if (ids !== lastProviderIds) {
+      lastProviderIds = ids;
+      void hydrateFromElectron();
+    }
+  });
+}
 
 export function getApiKey(provider: ProviderType): string | null {
   const val = cache[provider];

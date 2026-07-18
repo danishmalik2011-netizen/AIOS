@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, Menu, shell, ipcMain, session } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,6 +39,15 @@ function createWindow(): void {
       nodeIntegration: false,
       sandbox: false,
     },
+  });
+
+  // Approve media/audioCapture requests for speech-to-text to work
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'media' || permission === 'audioCapture') {
+      callback(true);
+    } else {
+      callback(false);
+    }
   });
 
   mainWindow.once('ready-to-show', () => mainWindow?.show());
@@ -148,7 +157,7 @@ function setupAutoUpdater(getWindow: () => BrowserWindow | null) {
     });
 
     ipcMain.handle('updater:install', () => {
-      autoUpdater.quitAndInstall();
+      autoUpdater.quitAndInstall(false, true);
     });
   }
 }

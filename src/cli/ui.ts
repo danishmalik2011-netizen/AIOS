@@ -7,6 +7,27 @@
    ================================================ */
 
 import readline from 'node:readline';
+import { exec } from 'node:child_process';
+import os from 'node:os';
+
+const readClipboard = (callback: (text: string) => void) => {
+  let cmd = '';
+  if (process.platform === 'win32') {
+    cmd = 'powershell.exe -NoProfile -Command "Get-Clipboard"';
+  } else if (process.platform === 'darwin') {
+    cmd = 'pbpaste';
+  } else {
+    cmd = 'xclip -selection clipboard -o || xsel -ob';
+  }
+
+  exec(cmd, (err, stdout) => {
+    if (err) {
+      callback('');
+      return;
+    }
+    callback(stdout.toString());
+  });
+};
 
 /* ---- ANSI ---------------------------------------------------------- */
 
@@ -76,55 +97,53 @@ export const ansi = {
 // Block-letter glyphs for A · I · O · S  (7 rows × 5 cols each, space-separated)
 const BLOCK: Record<string, string[]> = {
   A: [
-    ' ▄▄▄ ',
-    '▐█▄█▌',
-    '▐█ █▌',
-    '▐███▌',
-    '▐█ █▌',
-    '▐█ █▌',
-    '▀   ▀',
+    ' ▄▄▄▄▄ ',
+    '██   ██',
+    '██   ██',
+    '███████',
+    '██   ██',
+    '██   ██',
+    '▀▀   ▀▀',
   ],
   I: [
-    '▄███▄',
-    '  █  ',
-    '  █  ',
-    '  █  ',
-    '  █  ',
-    '  █  ',
-    '▀███▀',
+    '███████',
+    '  ███  ',
+    '  ███  ',
+    '  ███  ',
+    '  ███  ',
+    '  ███  ',
+    '▀▀▀▀▀▀▀',
   ],
   O: [
-    ' ▄█▄ ',
-    '█   █',
-    '█   █',
-    '█   █',
-    '█   █',
-    '█   █',
-    ' ▀█▀ ',
+    ' ▄▄▄▄▄ ',
+    '██   ██',
+    '██   ██',
+    '██   ██',
+    '██   ██',
+    '██   ██',
+    ' ▀▀▀▀▀ ',
   ],
   S: [
-    ' ████',
-    '█    ',
-    '█    ',
-    ' ▀▀▄ ',
-    '    █',
-    '    █',
-    '████ ',
+    ' ▄▄▄▄▄▄',
+    '██     ',
+    '██▄▄▄▄ ',
+    ' ▀▀▀▀██',
+    '     ██',
+    '▄▄▄▄▄██',
+    '▀▀▀▀▀▀ ',
   ],
 };
 
 // ASCII art of the circular logo (17 rows × 19 cols)
 // Mirrors the SVG: inner ring (┼/─/│), outer ring (· dashes), spokes (╌/╎), nodes (◉)
 const LOGO_ROWS = [
-  '     ◉  ╎  ◉     ',
-  '   ╌╌   │   ╌╌   ',
-  '  ◉   ╭─┼─╮   ◉  ',
-  '  ╎  ╭┘ │ └╮  ╎  ',
-  '──◉──┤  │  ├──◉──',
-  '  ╎  ╰╮ │ ╭╯  ╎  ',
-  '  ◉   ╰─┼─╯   ◉  ',
-  '   ╌╌   │   ╌╌   ',
-  '     ◉  ╎  ◉     ',
+  ' ▄▄▄▄▄▄▄▄ ',
+  '██      ██',
+  '██ ▄▄▄▄ ██',
+  '██ ████ ██',
+  '██ ▀▀▀▀ ██',
+  '██      ██',
+  ' ▀▀▀▀▀▀▀▀ ',
 ];
 
 /** Build the banner as an array of ANSI-coloured lines.
@@ -149,28 +168,23 @@ export function getBannerLines(version: string): string[] {
   const letters = ['A', 'I', 'O', 'S'];
   const titleRows: string[] = [];
   for (let r = 0; r < 7; r++) {
-    const colors = [C.provider, C.model, C.cyan, C.provider] as const;
     const row = letters
-      .map((l, i) => paint(colors[i] ?? '', BLOCK[l]![r] ?? '     '))
+      .map((l) => paint(C.bold, BLOCK[l]![r] ?? '       '))
       .join('  ');
     titleRows.push(row);
   }
 
-  const logoColor = `${ESC}38;5;75m`;
-  const nodeColor = `${ESC}38;5;214m`;
-  const spokeColor = `${ESC}38;5;141m`;
+  const logoRed = `${ESC}38;5;196m`; // Intense brutalist red
 
   const colorLogo = (row: string): string =>
     row.split('').map((ch) => {
-      if (ch === '◉') return `${nodeColor}${ch}${C.reset}`;
-      if ('╌╎│─'.includes(ch)) return `${spokeColor}${ch}${C.reset}`;
-      if ('╭╮╯╰┘└┼├┤'.includes(ch)) return `${logoColor}${ch}${C.reset}`;
+      if (ch === '█' || ch === '▄' || ch === '▀') return `${logoRed}${ch}${C.reset}`;
       return ch;
     }).join('');
 
   const lines: string[] = [''];
 
-  const titleOffset = 1;
+  const titleOffset = 0;
   for (let i = 0; i < LOGO_ROWS.length; i++) {
     const logoCol = '  ' + colorLogo(LOGO_ROWS[i]!);
     const titleIdx = i - titleOffset;
@@ -190,6 +204,18 @@ export function getBannerLines(version: string): string[] {
     '  ' + ansi.dim('                  ') +
     '    ' + ansi.dim('agentic command line · /help for commands'),
   );
+  lines.push('');
+
+  const cores = os.cpus()?.length || 4;
+  const ramGb = Math.round((os.totalmem() || 8589934592) / (1024 * 1024 * 1024));
+
+  lines.push(`  ${ansi.gray('>')} Scanning hardware...`);
+  lines.push(`  ${ansi.gray('>')} Found CPU Cores: ${cores} · RAM: ${ramGb}GB`);
+  lines.push(`  ${ansi.gray('>')} Initializing Fleet Director...`);
+  lines.push(`  ${ansi.gray('>')} Mapping workspace context...`);
+  lines.push(`  ${ansi.gray('>')} Loading active model profiles...`);
+  lines.push('');
+  lines.push(`  ${ansi.green('✓')} ${ansi.bold('Ready.')} Inference: ${ansi.bold('BYOK')} · Telemetry: ${ansi.bold('ZERO')}`);
   lines.push('');
 
   return lines;
@@ -717,6 +743,7 @@ export function startRepl(cb: ReplCallbacks): {
   let pastedText = '';
   let isPasting = false;
   let pasteBuffer = '';
+  let lastPasteTime = 0;
   let busy = false;
   let turnStartTime = 0;
   let busyTick: NodeJS.Timeout | null = null;
@@ -1107,7 +1134,21 @@ export function startRepl(cb: ReplCallbacks): {
   const onKey = (_ch: string | undefined, key: any) => {
     if (ignoreKeypress) return;
     if (isPasting) return;
+    if (Date.now() - lastPasteTime < 150) return;
     if (secretPromptActive) return; // a hidden secret prompt owns the input
+
+    // Intercept Ctrl+V system pasting
+    if ((key && key.ctrl && key.name === 'v') || _ch === '\x16') {
+      readClipboard((text) => {
+        if (text) {
+          const cleanedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+          buf += cleanedText;
+          recompute();
+          redraw();
+        }
+      });
+      return;
+    }
     // While the selector is open, all keys drive the picker — this must be
     // checked BEFORE the `busy` guard because the picker is awaited inside
     // onLine, which sets busy=true for its whole duration.
@@ -1350,6 +1391,7 @@ export function startRepl(cb: ReplCallbacks): {
         const endIdx = str.indexOf('\x1b[201~');
         pasteBuffer += str.slice(0, endIdx);
         isPasting = false;
+        lastPasteTime = Date.now();
 
         // Paste finished. Check if it's multi-line or single-line
         const lines = pasteBuffer.split(/\r?\n/);

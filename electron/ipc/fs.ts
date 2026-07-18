@@ -1,4 +1,5 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, dialog } from 'electron';
+import { exec } from 'node:child_process';
 import fs from 'node:fs/promises';
 import { watch, type FSWatcher } from 'node:fs';
 import path from 'node:path';
@@ -311,4 +312,36 @@ export function registerFsHandlers(): void {
       return readDir(rootPath, rootPath);
     },
   );
+
+  ipcMain.handle('fs:zipProject', async (_event, rootPath: string): Promise<string | null> => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (!win) return null;
+
+    const { filePath } = await dialog.showSaveDialog(win, {
+      title: 'Export Project',
+      defaultPath: path.join(path.dirname(rootPath), `${path.basename(rootPath)}.zip`),
+      filters: [{ name: 'ZIP Archives', extensions: ['zip'] }],
+    });
+
+    if (!filePath) return null;
+
+    return new Promise((resolve, reject) => {
+      let cmd = '';
+      if (process.platform === 'win32') {
+        const cleanRoot = rootPath.replace(/'/g, "''");
+        const cleanDest = filePath.replace(/'/g, "''");
+        cmd = `powershell.exe -NoProfile -Command "Get-ChildItem -Path '${cleanRoot}' -Exclude 'node_modules','.git','release','dist','dist-electron','build','.next' | Compress-Archive -DestinationPath '${cleanDest}' -Force"`;
+      } else {
+        cmd = `zip -r "${filePath}" . -x "node_modules/*" -x ".git/*" -x "release/*" -x "dist/*" -x "dist-electron/*" -x "build/*" -x ".next/*"`;
+      }
+
+      exec(cmd, { cwd: rootPath }, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(filePath);
+        }
+      });
+    });
+  });
 }

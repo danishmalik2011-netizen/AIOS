@@ -420,7 +420,7 @@
   flex: 1;
   min-height: 0;
   width: 100%;
-  padding: var(--space-2) var(--space-3);
+  padding: 8px 0 8px 12px; /* Pad top, bottom, left. No right padding to prevent scrollbar overlapping */
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -431,7 +431,7 @@
 
 /* Enable custom scrollbar inside xterm viewport */
 .terminal__xterm .xterm-viewport {
-  overflow-y: auto !important;
+  overflow-y: scroll !important; /* Force scrollbar always visible to prevent column shifting and layout breaks */
   pointer-events: auto !important;
   scrollbar-width: thin !important;
   scrollbar-color: var(--border-strong) transparent !important;

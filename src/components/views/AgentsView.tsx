@@ -10,6 +10,7 @@ import React, {
 import {
   Send,
   Square,
+  LayoutDashboard,
   Plus,
   Bot,
   Network,
@@ -43,6 +44,7 @@ import {
   X,
   Cpu,
   Check,
+  Sparkles,
   Copy as DuplicateIcon,
   MoreVertical,
   Share2,
@@ -52,6 +54,10 @@ import {
   Wrench,
   Loader2,
   RefreshCw,
+  Volume2,
+  VolumeX,
+  Download,
+  ArrowDownCircle,
 } from 'lucide-react';
 import { useChatStore, getSessionById, type ChatSession, DEFAULT_PROJECT_ID } from '@/store/useChatStore';
 import { useAgentStore } from '@/store/useAgentStore';
@@ -562,6 +568,12 @@ export function AgentsView() {
   const providers = useSettingsStore((s) => s.providers);
   const settingsOpen = useSettingsStore((s) => s.settingsOpen);
   const setSettingsOpen = useSettingsStore((s) => s.setSettingsOpen);
+  const updateStatus = useSettingsStore((s) => s.updateStatus);
+  const quitAndInstall = useSettingsStore((s) => s.quitAndInstall);
+  const checkForUpdates = useSettingsStore((s) => s.checkForUpdates);
+  const downloadUpdate = useSettingsStore((s) => s.downloadUpdate);
+  const setActiveView = useSettingsStore((s) => s.setActiveView);
+  const setActiveSection = useSettingsStore((s) => s.setActiveSection);
   const projectRoot = useProjectStore((s) => s.projectRoot);
   const fileTree = useProjectStore((s) => s.fileTree);
   const openFolder = useProjectStore((s) => s.openFolder);
@@ -621,12 +633,35 @@ export function AgentsView() {
   const [isFilePickerOpen, setIsFilePickerOpen] = useState(false);
   const [fileFilter, setFileFilter] = useState('');
 
+  const handleSystemFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const paths: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const filePath = (files[i] as any).path;
+      if (filePath && !attachedFiles.includes(filePath)) {
+        paths.push(filePath);
+      }
+    }
+    if (paths.length > 0) {
+      setAttachedFiles((prev) => [...prev, ...paths]);
+    }
+    e.target.value = '';
+    setIsFilePickerOpen(false);
+  };
+
   // Slash commands
   const [isSlashMenuOpen, setIsSlashMenuOpen] = useState(false);
 
   // Auto-access popover + chat sidebar collapse
   const [isAutoAccessOpen, setIsAutoAccessOpen] = useState(false);
   const [railCollapsed, setRailCollapsed] = useState(false);
+  const [isWarningDismissed, setIsWarningDismissed] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const [isPolishing, setIsPolishing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   // Chat project groupings in the sidebar.
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(() => new Set());
 
@@ -974,7 +1009,14 @@ export function AgentsView() {
   // Reset the Agent Canvas content when switching conversations (keeps the
   // collapse state and the global preview URL intact).
   useEffect(() => {
-    if (activeSessionId) useFollowPanelStore.getState().resetForSession(activeSessionId);
+    if (activeSessionId) {
+      useFollowPanelStore.getState().resetForSession(activeSessionId);
+      setIsWarningDismissed(false);
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      setSpeakingMessageId(null);
+    }
   }, [activeSessionId]);
 
   const activeAgent = useMemo(() => {
@@ -1164,6 +1206,102 @@ export function AgentsView() {
           });
         }
         return `Successfully wrote ${content.length} characters to ${filePath}`;
+      }
+      case 'patch_file': {
+        const filePath = args.path;
+        const oldStr = args.old_str;
+        const newStr = args.new_str;
+        if (!filePath) throw new Error('Missing file path parameter.');
+        if (oldStr === undefined || newStr === undefined) {
+          throw new Error('Missing old_str or new_str parameters.');
+        }
+
+        let original = '';
+        try {
+          original = await window.aios.fs.readFile(root, filePath, { numbered: false });
+        } catch (err: any) {
+          throw new Error(`Could not read file for patching: ${err.message}`);
+        }
+
+        if (!original.includes(oldStr)) {
+          throw new Error(`Could not find old_str in ${filePath}. Check if formatting or whitespace matches exactly.`);
+        }
+
+        const patched = original.replace(oldStr, newStr);
+
+        const autoAccessEdits =
+          useAutoAccessStore.getState().enabled && useAutoAccessStore.getState().edits;
+        if (!useDiffReviewStore.getState().autoApply && !autoAllowed && !autoAccessEdits) {
+          const decision = await useDiffReviewStore.getState().requestApproval({
+            id: crypto.randomUUID(),
+            path: filePath,
+            original,
+            proposed: patched,
+          });
+          if (decision === 'rejected') {
+            throw new ToolRejectedError(`Patch to ${filePath} was rejected.`);
+          }
+        }
+
+        const ok = await window.aios.fs.writeFile(root, filePath, patched);
+        if (!ok) throw new Error('Failed to write patched file.');
+
+        if (followAgent) {
+          const name = filePath.split(/[\\/]/).pop() || filePath;
+          useFollowPanelStore.getState().followFile({
+            id: filePath,
+            path: filePath,
+            name,
+            content: patched,
+            original,
+          });
+        }
+
+        return `Successfully patched ${filePath}`;
+      }
+      case 'append_file': {
+        const filePath = args.path;
+        const content = args.content || '';
+        if (!filePath) throw new Error('Missing file path parameter.');
+
+        let original = '';
+        try {
+          original = await window.aios.fs.readFile(root, filePath, { numbered: false });
+        } catch {
+          original = '';
+        }
+
+        const combined = original ? original + '\n' + content : content;
+
+        const autoAccessEdits =
+          useAutoAccessStore.getState().enabled && useAutoAccessStore.getState().edits;
+        if (!useDiffReviewStore.getState().autoApply && !autoAllowed && !autoAccessEdits) {
+          const decision = await useDiffReviewStore.getState().requestApproval({
+            id: crypto.randomUUID(),
+            path: filePath,
+            original,
+            proposed: combined,
+          });
+          if (decision === 'rejected') {
+            throw new ToolRejectedError(`Append to ${filePath} was rejected.`);
+          }
+        }
+
+        const ok = await window.aios.fs.writeFile(root, filePath, combined);
+        if (!ok) throw new Error('Failed to append to file.');
+
+        if (followAgent) {
+          const name = filePath.split(/[\\/]/).pop() || filePath;
+          useFollowPanelStore.getState().followFile({
+            id: filePath,
+            path: filePath,
+            name,
+            content: combined,
+            original,
+          });
+        }
+
+        return `Successfully appended content to ${filePath}`;
       }
       case 'list_dir': {
         const dirPath = args.path || '.';
@@ -1396,10 +1534,51 @@ export function AgentsView() {
 
     for (let i = 0; i < updatedCalls.length; i++) {
       const call = updatedCalls[i];
+      const isFileEdit = call.name === 'write_file' || call.name === 'patch_file' || call.name === 'append_file';
+
+      let diff: { path?: string; additions: number; deletions: number } | undefined = undefined;
+      if (isFileEdit) {
+        try {
+          let args: Record<string, any> = {};
+          try {
+            args = JSON.parse(call.arguments);
+          } catch {
+            const cleaned = call.arguments.replace(/'/g, '"');
+            args = JSON.parse(cleaned);
+          }
+          const filePath = args.path || '';
+          if (filePath) {
+            let original = '';
+            let proposed = '';
+            try {
+              original = await window.aios!.fs.readFile(root, filePath, { numbered: false });
+            } catch {
+              original = '';
+            }
+            if (call.name === 'write_file') {
+              proposed = args.content || '';
+            } else if (call.name === 'patch_file') {
+              const oldStr = args.old_str || '';
+              const newStr = args.new_str || '';
+              proposed = original.includes(oldStr) ? original.replace(oldStr, newStr) : original;
+            } else if (call.name === 'append_file') {
+              const content = args.content || '';
+              proposed = original ? original + '\n' + content : content;
+            }
+            diff = {
+              path: filePath,
+              ...computeLineDiff(original, proposed),
+            };
+          }
+        } catch (e) {
+          console.error("Diff pre-calculation failed:", e);
+        }
+      }
 
       updatedCalls[i] = {
         ...call,
-        status: call.name === 'write_file' ? 'awaiting-approval' : 'running',
+        status: isFileEdit ? 'awaiting-approval' : 'running',
+        diff,
       };
       updateMessage(sessionId, messageId, { toolCalls: [...priorToolCalls, ...updatedCalls] });
 
@@ -1413,25 +1592,17 @@ export function AgentsView() {
         }
 
         const toolOutput = await executeLocalTool(call.name, args, sessionId);
-        const patch: ToolCall = { ...call, status: 'success', output: toolOutput };
+        const patch: ToolCall = {
+          ...call,
+          status: 'success',
+          output: toolOutput,
+          diff: updatedCalls[i].diff,
+        };
 
         // Track that this turn mutated the workspace so the self-verification
         // step at turn end knows there is something to verify.
         if (call.name === 'write_file' || call.name === 'run_command' || call.name === 'git_commit') {
           runOf(sessionId).madeChanges = true;
-        }
-
-        if (call.name === 'write_file') {
-          let original = '';
-          try {
-            original = await window.aios!.fs.readFile(root, args.path, { numbered: false });
-          } catch {
-            original = '';
-          }
-          patch.diff = {
-            path: args.path,
-            ...computeLineDiff(original, args.content || ''),
-          };
         }
         updatedCalls[i] = patch;
       } catch (err) {
@@ -1880,12 +2051,22 @@ ${toolsToXmlPromptDoc(activeTools)}`;
       // fed to the model only (see `hidden` on the message).
       let fileContextBlock = '';
       if (files.length > 0) {
-        fileContextBlock += '\n\n=== Referencing Workspace Files ===\n';
-        files.forEach((f) => {
-          // Try reading content from dirty files registry
-          const content = useProjectStore.getState().fileContents[f] || `(External or unread file content at ${f})`;
+        fileContextBlock += '\n\n=== Referencing Files ===\n';
+        for (const f of files) {
+          let content = useProjectStore.getState().fileContents[f] || '';
+          if (!content) {
+            try {
+              if (window.aios) {
+                content = await window.aios.fs.readFile(projectRoot || '', f, { numbered: false });
+              } else {
+                content = `(File reading not supported in browser environment: ${f})`;
+              }
+            } catch (err: any) {
+              content = `(Error reading file: ${err.message || String(err)})`;
+            }
+          }
           fileContextBlock += `\nFile path: ${f}\n\`\`\`\n${content}\n\`\`\`\n`;
-        });
+        }
       }
 
       // Auto-retrieve relevant project context (lexical; offline, no API cost).
@@ -2020,6 +2201,245 @@ ${toolsToXmlPromptDoc(activeTools)}`;
     runOf(activeSessionId).queue = next;
     setQueue(activeSessionId, next);
     scheduleNext();
+  };
+
+  const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
+    const getApiKeyAsync = async (p: string): Promise<string | null> => {
+      const cached = getApiKey(p);
+      if (cached) return cached;
+      if (typeof window !== 'undefined' && window.aios) {
+        try {
+          const val = await window.aios.secrets.get(p);
+          if (val && val.trim().length >= 12 && !val.includes('xxxx') && !val.includes('...')) {
+            return val.trim();
+          }
+        } catch {}
+      }
+      return null;
+    };
+
+    const groqKey = await getApiKeyAsync('groq');
+    const openaiKey = await getApiKeyAsync('openai');
+    const geminiKey = (await getApiKeyAsync('gemini')) || (await getApiKeyAsync('google')) || (await getApiKeyAsync('openrouter'));
+
+    if (!groqKey && !openaiKey && !geminiKey) {
+      throw new Error("No API key configured for speech transcription. Please configure a Gemini, Groq, or OpenAI API key in Settings.");
+    }
+
+    const blobToBase64 = (blob: Blob): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64data = reader.result as string;
+          const base64 = base64data.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    };
+
+    // 1. Try Groq Whisper (blazing fast and free developer tier)
+    if (groqKey) {
+      try {
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'speech.webm');
+        formData.append('model', 'whisper-large-v3');
+        const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${groqKey}`,
+          },
+          body: formData,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return data.text || '';
+        }
+      } catch (e) {
+        console.error("Groq Whisper transcription failed:", e);
+      }
+    }
+
+    // 2. Try Gemini Multimodal (completely free and costless developer tier)
+    if (geminiKey) {
+      try {
+        const base64Audio = await blobToBase64(audioBlob);
+        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + geminiKey, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType: 'audio/webm',
+                      data: base64Audio,
+                    },
+                  },
+                  {
+                    text: 'Transcribe this audio exactly. Do not add any introductory or explanatory text. Just return the spoken words.',
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          return candidateText.trim();
+        }
+      } catch (e) {
+        console.error("Gemini transcription failed:", e);
+      }
+    }
+
+    // 3. Try OpenAI Whisper (paid fallback)
+    if (openaiKey) {
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'speech.webm');
+      formData.append('model', 'whisper-1');
+      const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiKey}`,
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.text || '';
+      }
+    }
+
+    throw new Error("Speech transcription failed. Please verify your Gemini or Groq API keys in Settings.");
+  };
+
+  const toggleSpeechRecognition = () => {
+    try {
+      if (isRecording) {
+        if (mediaRecorderRef.current) {
+          mediaRecorderRef.current.stop();
+        }
+        setIsRecording(false);
+      } else {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then((stream) => {
+            const mediaRecorder = new MediaRecorder(stream);
+            audioChunksRef.current = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+              if (event.data.size > 0) {
+                audioChunksRef.current.push(event.data);
+              }
+            };
+
+            mediaRecorder.onstop = async () => {
+              const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+              
+              // Stop all audio tracks in the stream to release the mic
+              stream.getTracks().forEach((track) => track.stop());
+
+              toast.info('Transcribing voice', 'Sending audio to Whisper...');
+              try {
+                const text = await transcribeAudio(audioBlob);
+                if (text && text.trim()) {
+                  setDraft((prev) => {
+                    const cleanPrev = prev.trim();
+                    return cleanPrev ? cleanPrev + ' ' + text.trim() : text.trim();
+                  });
+                  toast.success('Transcribed successfully', 'Voice input appended.');
+                }
+              } catch (err: any) {
+                console.error("Transcription error:", err);
+                toast.error("Voice input error", err.message || "Failed to transcribe audio.");
+              }
+            };
+
+            mediaRecorderRef.current = mediaRecorder;
+            mediaRecorder.start();
+            setIsRecording(true);
+          })
+          .catch((err) => {
+            console.error("Microphone access failed:", err);
+            toast.error("Microphone Access", "Could not access microphone. Please check system permissions.");
+            setIsRecording(false);
+          });
+      }
+    } catch (err: any) {
+      console.error("Speech recognition failed:", err);
+      toast.error("Voice input failure", err.message || "Could not start recording.");
+      setIsRecording(false);
+    }
+  };
+
+  const toggleReadAloud = (messageId: string, content: string) => {
+    try {
+      if (speakingMessageId === messageId) {
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+        setSpeakingMessageId(null);
+      } else {
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+
+        const cleanText = content.replace(/```[\s\S]*?```/g, '[code block]').replace(/[*_#`\-]/g, '');
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.rate = 1.25; // Bit faster
+        utterance.onend = () => setSpeakingMessageId(null);
+        utterance.onerror = () => setSpeakingMessageId(null);
+
+        setSpeakingMessageId(messageId);
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch (err: any) {
+      console.error("Speech synthesis failed:", err);
+      toast.error("Speech Output Error", "Speech synthesis failed or was blocked.");
+      setSpeakingMessageId(null);
+    }
+  };
+
+  const handlePolishPrompt = async () => {
+    const text = draft.trim();
+    if (!text) {
+      toast.error("Text required", "Please enter or record some text first.");
+      return;
+    }
+
+    setIsPolishing(true);
+    try {
+      const res = await complete(
+        {
+          model: activeModel,
+          system: "You are an expert AI prompt optimizer and editor. Your task is to analyze the user's input, correct any speech-to-text transcription errors, repair typos, fix grammar, and restate it as a clear, well-structured prompt for an AI coding assistant. Make sure to keep the user's original core intention intact but state it much better. Return ONLY the final polished text. Do not add any conversational framing, preamble, postamble, or surrounding quotes. If the prompt is already perfect, return it exactly as is.",
+          messages: [
+            {
+              role: 'user',
+              content: text,
+            },
+          ],
+          temperature: 0.2,
+          maxTokens: 500,
+        },
+        { preferred: activeProvider as any },
+      );
+
+      const polishedText = (res.content || '').trim();
+      if (polishedText) {
+        setDraft(polishedText);
+      }
+    } catch (err: any) {
+      console.error("Polishing prompt failed:", err);
+      toast.error("Polishing failed", err.message || 'Unknown error');
+    } finally {
+      setIsPolishing(false);
+    }
   };
 
   const handleSend = async () => {
@@ -2228,9 +2648,9 @@ ${toolsToXmlPromptDoc(activeTools)}`;
               // Each agent executes on its OWN roster-configured model (with a
               // session fallback when its provider has no key).
               effectiveOverride(agent),
-              // Built-in + MCP tools, executed headlessly by the fleet dispatcher.
+              // Built-in + MCP tools, executed with visual canvas and approval integrations.
               fleetTools,
-              executeFleetTool,
+              async (name: string, args: Record<string, any>) => executeLocalTool(name, args, sid),
             );
             // Hand the typed deliverable forward to dependent agents.
             priorOutputs[task.id] = {
@@ -2483,49 +2903,125 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
         aria-label="Conversation workspace"
       >
         <div className="agents-rail__header">
-          <div className="agents-rail__heading">
-            <Bot size={18} />
-            <h2 className="agents-rail__title">Fleet Workspace</h2>
-          </div>
-          <div className="agents-rail__header-actions">
-              <IconButton
-                icon={<Plus size={14} />}
-                tooltip="New Chat (no folder)"
-                variant="accent"
-                size="sm"
-                onClick={() => createSession(activeAgentId, activeProvider, activeModel, undefined, null)}
-              />
-            <IconButton
-              icon={railCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-              tooltip={railCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              variant="ghost"
-              size="sm"
-              onClick={() => setRailCollapsed((c) => !c)}
-            />
-          </div>
-        </div>
-
-        <div className="agents-rail__search">
-          <Input
-            icon={<Search size={14} />}
-            placeholder="Search conversations…"
-            value={sessionSearchQuery}
-            aria-label="Search chat sessions"
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setSessionSearchQuery(e.target.value)}
+          {!railCollapsed && <h2 className="agents-rail__title" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>Chats</h2>}
+          <IconButton
+            icon={railCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+            tooltip={railCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            variant="ghost"
+            size="sm"
+            onClick={() => setRailCollapsed((c) => !c)}
           />
         </div>
 
+        <div className="agents-rail__new-btn-wrap">
+          {!railCollapsed ? (
+            <button
+              type="button"
+              className="new-chat-btn"
+              onClick={() => createSession(activeAgentId, activeProvider, activeModel, undefined, null)}
+            >
+              <Plus size={16} />
+              <span>New Chat</span>
+            </button>
+          ) : (
+            <IconButton
+              icon={<Plus size={16} />}
+              tooltip="New Chat"
+              variant="accent"
+              size="md"
+              onClick={() => createSession(activeAgentId, activeProvider, activeModel, undefined, null)}
+            />
+          )}
+        </div>
+
+        {!railCollapsed && (
+          <div className="agents-rail__search">
+            <Input
+              icon={<Search size={14} />}
+              placeholder="Search conversations…"
+              value={sessionSearchQuery}
+              aria-label="Search chat sessions"
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setSessionSearchQuery(e.target.value)}
+            />
+          </div>
+        )}
+
         <div className="agents-rail__list">
+          {/* Pinned conversations */}
+          {pinnedSessions.length > 0 && (
+            <div className="session-section">
+              <span className="session-section__title">
+                <Pin size={11} style={{ transform: 'rotate(45deg)' }} /> Pinned
+              </span>
+              {pinnedSessions.map((s) => (
+                <SessionRow
+                  key={s.id}
+                  session={s}
+                  activeId={activeSessionId}
+                  onSelect={setActiveSessionId}
+                  onRename={renameSession}
+                  onDelete={removeSession}
+                  onPin={togglePinSession}
+                  onArchive={toggleArchiveSession}
+                  onDuplicate={duplicateSession}
+                  onCopyId={copyConversationId}
+                  onCopyTranscript={copyTranscript}
+                  onSharePdf={shareSessionAsPdf}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Recents conversations */}
+          {activeSessions.length > 0 && (
+            <div className="session-section">
+              <span className="session-section__title">
+                <Clock size={11} /> Recents
+              </span>
+              {activeSessions.slice(0, 10).map((s) => (
+                <SessionRow
+                  key={s.id}
+                  session={s}
+                  activeId={activeSessionId}
+                  onSelect={setActiveSessionId}
+                  onRename={renameSession}
+                  onDelete={removeSession}
+                  onPin={togglePinSession}
+                  onArchive={toggleArchiveSession}
+                  onDuplicate={duplicateSession}
+                  onCopyId={copyConversationId}
+                  onCopyTranscript={copyTranscript}
+                  onSharePdf={shareSessionAsPdf}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Project collapsible groups (for full file navigation) */}
+          <div className="session-section projects-header-section">
+            <span className="session-section__title" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Folder size={11} /> Projects
+              </span>
+              <button
+                type="button"
+                className="add-project-link-btn"
+                onClick={() => void openFolder()}
+                title="Open another folder as project"
+              >
+                + Add
+              </button>
+            </span>
+          </div>
+
           {projects.map((project) => {
             const projectSessions = filteredSessions.filter(
               (s) => (s.projectId ?? DEFAULT_PROJECT_ID) === project.id,
             );
-            const pinned = projectSessions.filter((s) => s.isPinned && !s.isArchived);
-            const active = projectSessions.filter((s) => !s.isPinned && !s.isArchived);
-            const archived = projectSessions.filter((s) => s.isArchived);
             const isCollapsed = collapsedProjects.has(project.id);
             const isDefault = project.id === DEFAULT_PROJECT_ID;
-            const total = projectSessions.length;
+            if (isDefault) return null; // Default unsorted is handled globally
+
             return (
               <div className="project-group" key={project.id}>
                 <div className="project-group__header">
@@ -2556,147 +3052,170 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                     ) : (
                       <span className="project-group__name">{project.name}</span>
                     )}
-                    <span className="project-group__count">{total}</span>
                   </button>
                   <div className="project-group__actions">
-                    {!isDefault && (
-                      <>
-                        <IconButton
-                          icon={<Pencil size={13} />}
-                          tooltip="Rename project"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => startRenameProject(project.id, project.name)}
-                        />
-                        <IconButton
-                          icon={<Trash2 size={13} />}
-                          tooltip="Delete project"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteProject(project.id, project.name)}
-                        />
-                      </>
-                    )}
+                    <IconButton
+                      icon={<Pencil size={13} />}
+                      tooltip="Rename project"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => startRenameProject(project.id, project.name)}
+                    />
+                    <IconButton
+                      icon={<Trash2 size={13} />}
+                      tooltip="Delete project"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteProject(project.id, project.name)}
+                    />
                   </div>
                 </div>
-
-                {!isCollapsed && (
-                  <div className="project-group__body">
-                    {total === 0 && (
-                      <p className="session-section__empty">No conversations yet.</p>
-                    )}
-                    {pinned.map((s) => (
-                      <SessionRow
-                        key={s.id}
-                        session={s}
-                        activeId={activeSessionId}
-                        onSelect={setActiveSessionId}
-                        onRename={renameSession}
-                        onDelete={removeSession}
-                        onPin={togglePinSession}
-                        onArchive={toggleArchiveSession}
-                        onDuplicate={duplicateSession}
-                        onCopyId={copyConversationId}
-                        onCopyTranscript={copyTranscript}
-                        onSharePdf={shareSessionAsPdf}
-                      />
-                    ))}
-                    {active.map((s) => (
-                      <SessionRow
-                        key={s.id}
-                        session={s}
-                        activeId={activeSessionId}
-                        onSelect={setActiveSessionId}
-                        onRename={renameSession}
-                        onDelete={removeSession}
-                        onPin={togglePinSession}
-                        onArchive={toggleArchiveSession}
-                        onDuplicate={duplicateSession}
-                        onCopyId={copyConversationId}
-                        onCopyTranscript={copyTranscript}
-                        onSharePdf={shareSessionAsPdf}
-                      />
-                    ))}
-                    {archived.length > 0 && (
-                      <div className="session-section">
-                        <span className="session-section__title"><Archive size={11} /> Archived</span>
-                        {archived.map((s) => (
-                          <SessionRow
-                            key={s.id}
-                            session={s}
-                            activeId={activeSessionId}
-                            onSelect={setActiveSessionId}
-                            onRename={renameSession}
-                            onDelete={removeSession}
-                            onPin={togglePinSession}
-                            onArchive={toggleArchiveSession}
-                            onDuplicate={duplicateSession}
-                            onCopyId={copyConversationId}
-                            onCopyTranscript={copyTranscript}
-                            onSharePdf={shareSessionAsPdf}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
 
-          {unsortedSessions.length > 0 && (
-            <div className="project-group">
-              <div className="project-group__header">
-                <button type="button" className="project-group__toggle" aria-expanded>
-                  <Folder size={13} />
-                  <span className="project-group__name">No project</span>
-                  <span className="project-group__count">{unsortedSessions.length}</span>
-                </button>
-              </div>
-              <div className="project-group__body">
-                {unsortedSessions.map((s) => (
-                  <SessionRow
-                    key={s.id}
-                    session={s}
-                    activeId={activeSessionId}
-                    onSelect={setActiveSessionId}
-                    onRename={renameSession}
-                    onDelete={removeSession}
-                    onPin={togglePinSession}
-                    onArchive={toggleArchiveSession}
-                    onDuplicate={duplicateSession}
-                    onCopyId={copyConversationId}
-                    onCopyTranscript={copyTranscript}
-                    onSharePdf={shareSessionAsPdf}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          <button type="button" className="project-group__add" onClick={() => void openFolder()}>
-            <FolderOpen size={14} /> New Project
-          </button>
-
-          {/* AGENTS LIST SUMMARY */}
-          <div className="agents-summary-block">
-            <span className="session-section__title"><Activity size={11} /> Available Agents</span>
-            <div className="agents-grid">
-              {agents.map((a) => (
-                <button
-                  key={a.id}
-                  type="button"
-                  className={`agent-chip ${a.id === activeAgentId ? 'agent-chip--active' : ''}`}
-                  onClick={() => handleAgentChange(a.id)}
-                >
-                  <span className="agent-chip__avatar">
-                    <AgentAvatar role={a.role} size={24} glow={false} />
-                  </span>
-                  <span className="agent-chip__name">{a.name}</span>
-                </button>
+          {archivedSessions.length > 0 && (
+            <div className="session-section">
+              <span className="session-section__title">
+                <Archive size={11} /> Archived
+              </span>
+              {archivedSessions.map((s) => (
+                <SessionRow
+                  key={s.id}
+                  session={s}
+                  activeId={activeSessionId}
+                  onSelect={setActiveSessionId}
+                  onRename={renameSession}
+                  onDelete={removeSession}
+                  onPin={togglePinSession}
+                  onArchive={toggleArchiveSession}
+                  onDuplicate={duplicateSession}
+                  onCopyId={copyConversationId}
+                  onCopyTranscript={copyTranscript}
+                  onSharePdf={shareSessionAsPdf}
+                />
               ))}
             </div>
-          </div>
+          )}
+        </div>
+
+        {/* Updater Widget Card */}
+        <div className="agents-rail__updater">
+          {!railCollapsed ? (
+            (() => {
+              const status = updateStatus.status;
+              const version = updateStatus.version || '';
+              const percent = typeof updateStatus.percent === 'number' ? updateStatus.percent : 0;
+
+              switch (status) {
+                case 'checking':
+                  return (
+                    <div className="relaunch-update-card relaunch-update-card--checking">
+                      <Loader2 size={16} className="update-card-icon-spin text-muted" />
+                      <div className="update-card-text">
+                        <span className="update-title">Checking for updates</span>
+                        <span className="update-version">Connecting to releases...</span>
+                      </div>
+                    </div>
+                  );
+                case 'available':
+                  return (
+                    <div className="relaunch-update-card relaunch-update-card--available" onClick={() => downloadUpdate()}>
+                      <span className="leaf-icon">📥</span>
+                      <div className="update-card-text">
+                        <span className="update-title">Update Available (v{version})</span>
+                        <span className="update-version">Click to download update</span>
+                      </div>
+                      <span className="update-arrow">↓</span>
+                    </div>
+                  );
+                case 'downloading':
+                  return (
+                    <div className="relaunch-update-card relaunch-update-card--downloading">
+                      <Loader2 size={16} className="update-card-icon-spin text-accent" />
+                      <div className="update-card-text" style={{ width: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <span className="update-title">Downloading Update</span>
+                          <span className="update-title" style={{ fontWeight: 'bold' }}>{percent}%</span>
+                        </div>
+                        <div className="update-progress-bar-bg">
+                          <div className="update-progress-bar-fill" style={{ width: `${percent}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                case 'downloaded':
+                  return (
+                    <div className="relaunch-update-card relaunch-update-card--downloaded" onClick={() => quitAndInstall()}>
+                      <span className="leaf-icon">🍃</span>
+                      <div className="update-card-text">
+                        <span className="update-title">Relaunch to update</span>
+                        <span className="update-version">v{version || '1.2.9'} ready to install</span>
+                      </div>
+                      <span className="update-arrow">→</span>
+                    </div>
+                  );
+                case 'error':
+                  return (
+                    <div className="relaunch-update-card relaunch-update-card--error" onClick={() => checkForUpdates()}>
+                      <AlertCircle size={16} className="text-destructive" />
+                      <div className="update-card-text">
+                        <span className="update-title">Update Check Failed</span>
+                        <span className="update-version">Click to try again</span>
+                      </div>
+                      <span className="update-arrow">↻</span>
+                    </div>
+                  );
+                default:
+                  return (
+                    <div className="relaunch-update-card" onClick={() => checkForUpdates()}>
+                      <span className="leaf-icon">⚡</span>
+                      <div className="update-card-text">
+                        <span className="update-title">Check for updates</span>
+                        <span className="update-version">v1.2.9 (Latest)</span>
+                      </div>
+                      <span className="update-arrow">↻</span>
+                    </div>
+                  );
+              }
+            })()
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <IconButton
+                icon={
+                  updateStatus.status === 'downloaded' ? (
+                    <span>🍃</span>
+                  ) : updateStatus.status === 'downloading' || updateStatus.status === 'checking' ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : updateStatus.status === 'available' ? (
+                    <span>📥</span>
+                  ) : (
+                    <span>⚡</span>
+                  )
+                }
+                tooltip={
+                  updateStatus.status === 'downloaded'
+                    ? "Relaunch to update"
+                    : updateStatus.status === 'downloading'
+                    ? `Downloading: ${updateStatus.percent || 0}%`
+                    : updateStatus.status === 'checking'
+                    ? "Checking for updates..."
+                    : updateStatus.status === 'available'
+                    ? `Update available (v${updateStatus.version}). Click to download.`
+                    : "Check for updates"
+                }
+                variant="ghost"
+                size="md"
+                onClick={
+                  updateStatus.status === 'downloaded'
+                    ? () => quitAndInstall()
+                    : updateStatus.status === 'available'
+                    ? () => downloadUpdate()
+                    : () => checkForUpdates()
+                }
+              />
+            </div>
+          )}
         </div>
       </aside>
 
@@ -2704,42 +3223,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
       <section className="agents-chat" aria-label="Coding workspace conversation">
         {activeSession ? (
           <>
-            {/* Chat header */}
-            <header className="agents-chat__header glass">
-              <div className="agents-chat__identity">
-                <div className="agents-chat__name-row">
-                  <h3 className="agents-chat__name">{activeSession.title}</h3>
-                  <Badge variant="default" dot>
-                    Active Agent: {activeAgent?.name || 'Architect'}
-                  </Badge>
-                </div>
-                <div className="agents-chat__submeta">
-                  <span className="agents-chat__model">
-                    <ProviderIcon id={activeSession.provider} size={14} />
-                    <Cpu size={12} />
-                    {activeSession.provider} / {activeSession.model}
-                  </span>
-                  {activeSession.goal && (
-                    <span className="agents-chat__goal" title={activeSession.goal}>
-                      <Target size={11} />
-                      <span className="agents-chat__goal-text">{activeSession.goal}</span>
-                      <button
-                        type="button"
-                        className="agents-chat__goal-clear"
-                        aria-label="Clear goal"
-                        onClick={() => setGoal(activeSession.id, '')}
-                      >
-                        <X size={10} />
-                      </button>
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="agents-chat__header-metrics">
-                <Badge variant="default">Success: {Math.round((activeAgent?.metrics.successRate || 0.95) * 100)}%</Badge>
-                <Badge variant="default">Tasks: {activeAgent?.metrics.tasksCompleted || 0}</Badge>
-              </div>
-            </header>
+            {/* Chat header removed */}
 
             {/* Soft reminder for folder-less ("New Chat") conversations */}
             {!activeSession.projectId && (
@@ -2841,6 +3325,22 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                             }}
                           >
                             <DuplicateIcon size={12} /> Copy
+                          </button>
+                          <button
+                            type="button"
+                            className={`chat-msg__action ${speakingMessageId === message.id ? 'chat-msg__action--speaking' : ''}`}
+                            title={speakingMessageId === message.id ? "Stop Reading Aloud" : "Read Response Aloud"}
+                            onClick={() => toggleReadAloud(message.id, message.content)}
+                          >
+                            {speakingMessageId === message.id ? (
+                              <>
+                                <VolumeX size={12} style={{ color: 'var(--accent-primary)' }} /> Stop
+                              </>
+                            ) : (
+                              <>
+                                <Volume2 size={12} /> Read Aloud
+                              </>
+                            )}
                           </button>
                           {hasPriorUser && message.status !== 'streaming' && (
                             <button
@@ -2983,280 +3483,336 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
               )}
 
               {/* Input card: textarea + controls share one focus ring */}
-              <div className="composer-inputcard">
-              {/* Main textarea */}
-              <div className="composer-text-row">
-                <textarea
-                  className="agents-chat__textarea"
-                  placeholder={`Ask ${activeAgent.name} to write code, inspect folders, run tests...  (Enter to send, Shift+Enter for newline, '/' for commands)`}
-                  aria-label="Draft prompt"
-                  value={draft}
-                  rows={Math.min(6, Math.max(1, draft.split('\n').length))}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={handleComposerKey}
+              {/* Context Limit Warning Banner */}
+              {activeSession.messages.length >= 15 && !isWarningDismissed && (
+                <div className="composer-warning-banner">
+                  <span>This conversation has {activeSession.messages.length} messages. Consider starting a new chat to keep context fresh.</span>
+                  <div className="composer-warning-banner__actions">
+                    <button type="button" className="warning-banner-new" onClick={() => createSession(activeAgentId, activeProvider, activeModel)}>
+                      New Chat
+                    </button>
+                    <button
+                      type="button"
+                      className="warning-banner-dismiss"
+                      onClick={() => setIsWarningDismissed(true)}
+                      aria-label="Dismiss warning"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Toggle Buttons & Selectors Options Bar */}
+              <div className="composer-options-bar">
+                {/* Agent selector */}
+                <Dropdown
+                  ariaLabel="Select agent"
+                  className="composer-bar-dd"
+                  menuPlacement="top"
+                  value={activeAgentId}
+                  options={agentDropdownOptions}
+                  onChange={handleAgentChange}
                 />
-              </div>
 
-              {/* Selector pills & Controls */}
-              <div className="composer-controls">
-                <div className="composer-selectors">
-                  {/* Project / working folder — shown at the input corner */}
-                  <Dropdown
-                    ariaLabel="Working project"
-                    className="composer-dd composer-dd--project"
-                    menuPlacement="top"
-                    align="start"
-                    value={projectName ? 'current' : '__open__'}
-                    options={projectDropdownOptions}
-                    onChange={(v) => {
-                      if (v === '__open__') void openFolder();
-                    }}
-                  />
+                {/* Provider selector */}
+                <Dropdown
+                  ariaLabel="AI provider"
+                  className="composer-bar-dd"
+                  menuPlacement="top"
+                  searchable
+                  searchPlaceholder="Search providers…"
+                  value={activeProvider}
+                  options={providerDropdownOptions}
+                  onChange={handleProviderChange}
+                />
 
-                  {/* Provider selector */}
-                  <Dropdown
-                    ariaLabel="AI provider"
-                    className="composer-dd"
-                    menuPlacement="top"
-                    searchable
-                    searchPlaceholder="Search providers…"
-                    value={activeProvider}
-                    options={providerDropdownOptions}
-                    onChange={handleProviderChange}
-                  />
+                {/* Follow Agent Toggle */}
+                <button
+                  type="button"
+                  className={`composer-bar-btn ${followAgent ? 'is-active' : ''}`}
+                  title="Follow Agent — watch files & terminals live"
+                  onClick={() => setFollowAgent((f) => !f)}
+                >
+                  <Crosshair size={11} />
+                  <span>Follow</span>
+                </button>
 
-                  {/* Model selector — grouped by provider */}
-                  <ModelProviderDropdown
-                    providers={providers}
-                    dynamicModels={dynamicModels}
-                    builtinModels={BUILTIN_MODELS}
-                    activeProvider={activeProvider}
-                    activeModel={activeModel}
-                    onSelect={(prov, mod) => {
-                      handleProviderChange(prov);
-                      handleModelChange(mod);
-                    }}
-                  />
+                {/* Run with Fleet Toggle */}
+                <button
+                  type="button"
+                  className={`composer-bar-btn ${fleetMode ? 'is-active' : ''}`}
+                  title="Run with Fleet — coordinate multiple specialist agents"
+                  onClick={() => setFleetMode((f) => !f)}
+                >
+                  <Network size={11} />
+                  <span>Fleet Mode</span>
+                </button>
 
-                  {/* Agent selector */}
-                  <Dropdown
-                    ariaLabel="Select agent"
-                    className="composer-dd"
-                    menuPlacement="top"
-                    value={activeAgentId}
-                    options={agentDropdownOptions}
-                    onChange={handleAgentChange}
-                  />
-
-                  {/* Follow Agent toggle — surface the file/terminal the agent is
-                      acting on so you can watch its edits live. */}
+                {/* Auto Access (Trust Mode) Toggle */}
+                <div className="auto-access-wrapper" ref={autoAccessRef}>
                   <button
                     type="button"
-                    className={`composer-icon-btn glass-badge composer-icon-btn--push ${followAgent ? 'is-active' : ''}`}
-                    title="Follow Agent — open the file/terminal the agent is working on and watch its edits live"
-                    aria-pressed={followAgent}
-                    onClick={() => setFollowAgent((f) => !f)}
+                    className={`composer-bar-btn ${autoAccessEnabled ? 'is-active' : ''}`}
+                    title="Auto Access — run without approvals"
+                    onClick={() => setIsAutoAccessOpen((o) => !o)}
                   >
-                    <Crosshair size={12} />
-                    Follow Agent
+                    <Zap size={11} />
+                    <span>Auto Access</span>
                   </button>
 
-                  {/* Run with Fleet toggle — route the next send through the
-                      background Director, which auto-assigns the goal across the
-                      specialised agents and threads shared + prior context. */}
-                  <button
-                    type="button"
-                    className={`composer-icon-btn glass-badge ${fleetMode ? 'is-active' : ''}`}
-                    title="Run with Fleet — the Director auto-assigns this goal across the specialised agents (Architect plans, CodeSmith builds, …)"
-                    aria-pressed={fleetMode}
-                    onClick={() => setFleetMode((f) => !f)}
-                  >
-                    <Network size={12} />
-                    Run with Fleet
-                  </button>
-
-                  {/* Stop an in-flight fleet run. */}
-                  {fleetMode && orchestratorRunning && (
-                    <button
-                      type="button"
-                      className="composer-icon-btn glass-badge is-active"
-                      title="Stop fleet run"
-                      onClick={() => useOrchestratorStore.getState().abort()}
-                    >
-                      <Square size={12} />
-                      Stop
-                    </button>
-                  )}
-
-                  {/* Auto-access ("trust mode") toggle + options */}
-                  <div className="auto-access-wrapper" ref={autoAccessRef}>
-                    <button
-                      type="button"
-                      className={`composer-icon-btn glass-badge ${autoAccessEnabled ? 'is-active' : ''}`}
-                      title="Auto Access — let the agent work without per-step prompts"
-                      aria-pressed={autoAccessEnabled}
-                      onClick={() => setIsAutoAccessOpen((o) => !o)}
-                    >
-                      <Zap size={12} />
-                      Auto Access
-                    </button>
-
-                    {isAutoAccessOpen && (
-                      <div className="auto-access-popover">
-                        <div className="auto-access-popover__head">
-                          <span className="auto-access-popover__title">Auto Access</span>
-                          <span
-                            className={`auto-access-popover__state ${
-                              autoAccessEnabled ? 'is-on' : 'is-off'
-                            }`}
-                          >
-                            {autoAccessEnabled ? 'On' : 'Off'}
-                          </span>
-                        </div>
-                        <p className="auto-access-popover__hint">
-                          Give the agent uninterrupted access to this workspace. Turn off anytime to
-                          restore per-step approvals.
-                        </p>
-
-                        <label className="auto-access-row">
-                          <span className="auto-access-row__text">
-                            <span className="auto-access-row__label">Full workspace access</span>
-                            <span className="auto-access-row__sub">Run commands &amp; edit files freely</span>
-                          </span>
-                          <input
-                            type="checkbox"
-                            className="auto-access-switch"
-                            checked={autoAccessEnabled}
-                            onChange={(e) => setAutoAccessEnabled(e.target.checked)}
-                          />
-                        </label>
-
-                        <div className="auto-access-row auto-access-row--indented">
-                          <span className="auto-access-row__text">
-                            <span className="auto-access-row__label">Run shell commands</span>
-                            <span className="auto-access-row__sub">Skip the command approval popup</span>
-                          </span>
-                          <input
-                            type="checkbox"
-                            className="auto-access-switch"
-                            disabled={!autoAccessEnabled}
-                            checked={autoAccessCommands}
-                            onChange={(e) => setAutoAccessCommands(e.target.checked)}
-                          />
-                        </div>
-
-                        <div className="auto-access-row auto-access-row--indented">
-                          <span className="auto-access-row__text">
-                            <span className="auto-access-row__label">Apply file edits</span>
-                            <span className="auto-access-row__sub">Skip the diff-review modal</span>
-                          </span>
-                          <input
-                            type="checkbox"
-                            className="auto-access-switch"
-                            disabled={!autoAccessEnabled}
-                            checked={autoAccessEdits}
-                            onChange={(e) => setAutoAccessEdits(e.target.checked)}
-                          />
-                        </div>
-
-                        <p className="auto-access-popover__warn">
-                          <AlertCircle size={11} /> Only enable on projects you trust.
-                        </p>
+                  {isAutoAccessOpen && (
+                    <div className="auto-access-popover">
+                      <div className="auto-access-popover__head">
+                        <span className="auto-access-popover__title">Auto Access</span>
+                        <span className={`auto-access-popover__state ${autoAccessEnabled ? 'is-on' : 'is-off'}`}>
+                          {autoAccessEnabled ? 'On' : 'Off'}
+                        </span>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Attach files trigger */}
-                  <div className="attach-popover-wrapper">
-                    <button
-                      type="button"
-                      className="composer-icon-btn glass-badge"
-                      title="Attach workspace files"
-                      onClick={() => setIsFilePickerOpen(!isFilePickerOpen)}
-                    >
-                      <Paperclip size={12} />
-                      Attach
-                    </button>
-                    
-                    {isFilePickerOpen && (
-                      <div className="file-attach-popover glass">
-                        <Input
-                          icon={<Search size={12} />}
-                          placeholder="Search files..."
-                          value={fileFilter}
-                          autoFocus
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => setFileFilter(e.target.value)}
+                      <p className="auto-access-popover__hint">
+                        Give the agent uninterrupted access to this workspace. Turn off anytime to restore approvals.
+                      </p>
+                      <label className="auto-access-row">
+                        <span className="auto-access-row__text">
+                          <span className="auto-access-row__label">Full workspace access</span>
+                          <span className="auto-access-row__sub">Run commands &amp; edit files freely</span>
+                        </span>
+                        <input
+                          type="checkbox"
+                          className="auto-access-switch"
+                          checked={autoAccessEnabled}
+                          onChange={(e) => setAutoAccessEnabled(e.target.checked)}
                         />
-                        <div className="file-attach-list">
-                          {filteredFiles.length === 0 && (
-                            <span className="file-attach-empty">No files found.</span>
-                          )}
-                          {filteredFiles.map((file) => (
-                            <button
-                              key={file.path}
-                              type="button"
-                              className="file-attach-row"
-                              onClick={() => {
-                                if (!attachedFiles.includes(file.path)) {
-                                  setAttachedFiles((prev) => [...prev, file.path]);
-                                }
-                                setIsFilePickerOpen(false);
-                                setFileFilter('');
-                              }}
-                            >
-                              <FolderOpen size={11} />
-                              <span className="file-attach-name">{file.path}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  </div>
-
-                <div className="composer-actions">
-                  {planning ? (
-                    <Button variant="secondary" size="sm" disabled>
-                      Planning…
-                    </Button>
-                  ) : pendingPlan ? (
-                    <>
-                      <Button variant="ghost" size="sm" onClick={handleDiscardPlan}>
-                        Discard
-                      </Button>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        icon={<Check size={13} />}
-                        onClick={handleApprovePlan}
-                      >
-                        Approve &amp; run
-                      </Button>
-                    </>
-                  ) : isGenerating ? (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      icon={<Square size={13} />}
-                      onClick={handleStop}
-                    >
-                      Stop
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      icon={<Send size={13} />}
-                      disabled={!draft.trim() && attachedFiles.length === 0}
-                      onClick={handleSend}
-                    >
-                      Send
-                    </Button>
+                      </label>
+                    </div>
                   )}
                 </div>
               </div>
+
+              {/* Input card: textarea + controls share one focus ring */}
+              <div className="composer-inputcard">
+                {/* Attached Files List inside the composer card */}
+                {attachedFiles.length > 0 && (
+                  <div className="composer-attachments-row">
+                    {attachedFiles.map((file) => (
+                      <div key={file} className="composer-attachment-chip">
+                        <Paperclip size={10} style={{ marginRight: '4px' }} />
+                        <span className="composer-attachment-name" title={file}>
+                          {file.split(/[\\/]/).pop()}
+                        </span>
+                        <button
+                          type="button"
+                          className="composer-attachment-remove"
+                          onClick={() => setAttachedFiles((prev) => prev.filter((f) => f !== file))}
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {isRecording && (
+                  <div className="composer-recording-wave animate-fade-in">
+                    <div className="wave-bar"></div>
+                    <div className="wave-bar"></div>
+                    <div className="wave-bar"></div>
+                    <div className="wave-bar"></div>
+                    <div className="wave-bar"></div>
+                    <div className="wave-bar"></div>
+                    <div className="wave-bar"></div>
+                    <div className="wave-bar"></div>
+                    <span className="recording-status">Recording audio... click Mic button to stop and transcribe</span>
+                  </div>
+                )}
+
+                {/* Main textarea */}
+                <div className="composer-text-row">
+                  <textarea
+                    className="agents-chat__textarea"
+                    placeholder={`Write a message to ${activeAgent?.name || 'agent'}...`}
+                    aria-label="Draft prompt"
+                    value={draft}
+                    rows={Math.min(6, Math.max(1, draft.split('\n').length))}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={handleComposerKey}
+                  />
+                </div>
+
+                {/* Selector pills & Controls */}
+                <div className="composer-controls">
+                  <div className="composer-left-actions">
+                    {/* Project Folder Dropdown */}
+                    <Dropdown
+                      ariaLabel="Working project"
+                      className="composer-dd composer-dd--project"
+                      menuPlacement="top"
+                      align="start"
+                      value={projectName ? 'current' : '__open__'}
+                      options={projectDropdownOptions}
+                      onChange={(v) => {
+                        if (v === '__open__') void openFolder();
+                      }}
+                    />
+
+                    {/* Plus button for Attachments picker */}
+                    <div className="attach-popover-wrapper">
+                      <input
+                        type="file"
+                        multiple
+                        id="composer-system-file-input"
+                        style={{ display: 'none' }}
+                        onChange={handleSystemFileChange}
+                      />
+                      <button
+                        type="button"
+                        className="composer-plus-btn"
+                        title="Attach files"
+                        onClick={() => setIsFilePickerOpen(!isFilePickerOpen)}
+                      >
+                        <Plus size={16} />
+                      </button>
+                      
+                      {isFilePickerOpen && (
+                        <div className="file-attach-popover glass animate-fade-in-up">
+                          <button
+                            type="button"
+                            className="file-attach-system-btn"
+                            onClick={() => document.getElementById('composer-system-file-input')?.click()}
+                          >
+                            <FolderOpen size={11} />
+                            <span>Attach from computer...</span>
+                          </button>
+                          <div style={{ height: '1px', backgroundColor: 'var(--border-subtle)', margin: '4px 0' }} />
+
+                          <Input
+                            icon={<Search size={12} />}
+                            placeholder="Search workspace..."
+                            value={fileFilter}
+                            autoFocus
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setFileFilter(e.target.value)}
+                          />
+                          <div className="file-attach-list">
+                            {filteredFiles.length === 0 && (
+                              <span className="file-attach-empty">No files found.</span>
+                            )}
+                            {filteredFiles.map((file) => (
+                              <button
+                                key={file.path}
+                                type="button"
+                                className="file-attach-row"
+                                onClick={() => {
+                                  if (!attachedFiles.includes(file.path)) {
+                                    setAttachedFiles((prev) => [...prev, file.path]);
+                                  }
+                                  setIsFilePickerOpen(false);
+                                  setFileFilter('');
+                                }}
+                              >
+                                <FolderOpen size={11} />
+                                <span className="file-attach-name">{file.path}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="composer-right-actions">
+                    {/* Model selector — grouped by provider */}
+                    <ModelProviderDropdown
+                      providers={providers}
+                      dynamicModels={dynamicModels}
+                      builtinModels={BUILTIN_MODELS}
+                      activeProvider={activeProvider}
+                      activeModel={activeModel}
+                      onSelect={(prov, mod) => {
+                        handleProviderChange(prov);
+                        handleModelChange(mod);
+                      }}
+                    />
+
+                    {/* Microphone icon button */}
+                    <button
+                      type="button"
+                      className={`composer-mic-btn ${isRecording ? 'composer-mic-btn--recording' : ''}`}
+                      title={isRecording ? "Stop Voice Input" : "Voice Input (Speech-to-Text)"}
+                      onClick={toggleSpeechRecognition}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '15px', height: '15px' }}>
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                        <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v4M8 23h8" />
+                      </svg>
+                    </button>
+
+
+
+                    {/* Polish/Optimize Prompt button */}
+                    <button
+                      type="button"
+                      className={`composer-polish-btn ${isPolishing ? 'composer-polish-btn--polishing' : ''}`}
+                      title="AI Polish Prompt (Correct Grammar & Rephrase)"
+                      onClick={handlePolishPrompt}
+                      disabled={isPolishing}
+                    >
+                      {isPolishing ? (
+                        <Loader2 size={15} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+                      ) : (
+                        <Sparkles size={15} />
+                      )}
+                    </button>
+
+                    {/* Send or Stop button */}
+                    <div className="composer-send-btn-wrap">
+                      {planning ? (
+                        <Button variant="secondary" size="sm" disabled>
+                          Planning…
+                        </Button>
+                      ) : pendingPlan ? (
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <Button variant="ghost" size="sm" onClick={handleDiscardPlan}>
+                            Discard
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon={<Check size={11} />}
+                            onClick={handleApprovePlan}
+                          >
+                            Approve
+                          </Button>
+                        </div>
+                      ) : isGenerating ? (
+                        <button
+                          type="button"
+                          className="composer-send-btn composer-send-btn--stop"
+                          title="Stop fleet run"
+                          onClick={handleStop}
+                        >
+                          <Square size={12} fill="currentColor" />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="composer-send-btn"
+                          disabled={!draft.trim() && attachedFiles.length === 0}
+                          onClick={handleSend}
+                          title="Send message"
+                        >
+                          <Send size={12} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+
+              {/* Disclaimer */}
+              <div className="composer-disclaimer">
+                <span>AIOS is AI and can make mistakes. Please double-check responses.</span>
+              </div>
+              </div>
           </>
         ) : (
           <div className="agents-empty animate-fade-in-up">
@@ -3604,6 +4160,7 @@ function describeToolCall(call: ToolCall): { saying: string; verb: string } {
 
 function ToolCallCard({ call }: { call: ToolCall }) {
   const [isOpen, setIsOpen] = useState(false);
+  const projectRoot = useProjectStore((s) => s.projectRoot);
 
   const getStatusText = () => {
     if (call.status === 'running') return 'Executing...';
@@ -3617,24 +4174,75 @@ function ToolCallCard({ call }: { call: ToolCall }) {
 
   return (
     <div className="tool-call-card glass-card" data-status={call.status}>
-      <header className="tool-call-card__header" onClick={() => setIsOpen(!isOpen)}>
-        <div className="tool-call-card__title">
+      <header className="tool-call-card__header">
+        <div className="tool-call-card__title" onClick={() => setIsOpen(!isOpen)} style={{ flex: 1, cursor: 'pointer' }}>
           <Terminal size={12} />
-          {/* Plain-language "saying" — what the agent is doing, in simple terms. */}
           <span className="tool-call-card__saying">{saying}</span>
-          {/* Raw tool name kept as a small secondary badge for the curious. */}
           <span className="tool-call-card__name">{call.name}</span>
-          {call.name === 'write_file' && call.diff && (
-            <span className="tool-call-card__diff" title="Lines added / removed">
-              <span className="tool-call-card__diff-add">+{call.diff.additions}</span>
-              <span className="tool-call-card__diff-del">−{call.diff.deletions}</span>
-            </span>
-          )}
+        </div>
+        {/* Clickable diff badge to open in Code Canvas */}
+        {call.diff && (
+          <span
+            className="tool-call-card__diff clickable"
+            title="Click to open changes in Code Canvas"
+            style={{ cursor: 'pointer', userSelect: 'none', marginRight: '8px' }}
+            onClick={async (e) => {
+              e.stopPropagation();
+              let original = '';
+              let proposed = '';
+              try {
+                let args: Record<string, any> = {};
+                try {
+                  args = JSON.parse(call.arguments);
+                } catch {
+                  const cleaned = call.arguments.replace(/'/g, '"');
+                  args = JSON.parse(cleaned);
+                }
+                const filePath = args.path || '';
+                if (filePath) {
+                  try {
+                    original = await window.aios!.fs.readFile(projectRoot || '', filePath, { numbered: false });
+                  } catch {
+                    original = '';
+                  }
+                  if (call.name === 'write_file') {
+                    proposed = args.content || '';
+                  } else if (call.name === 'patch_file') {
+                    const oldStr = args.old_str || '';
+                    const newStr = args.new_str || '';
+                    proposed = original.includes(oldStr) ? original.replace(oldStr, newStr) : original;
+                  } else if (call.name === 'append_file') {
+                    const content = args.content || '';
+                    proposed = original ? original + '\n' + content : content;
+                  }
+                  
+                  const followStore = useFollowPanelStore.getState();
+                  followStore.setCollapsed(false);
+                  followStore.setActiveTab('code');
+                  followStore.followFile({
+                    id: filePath,
+                    path: filePath,
+                    name: filePath.split(/[\\/]/).pop() || filePath,
+                    content: proposed,
+                    original,
+                  });
+                  toast.success('Opening code canvas', `Showing changes for ${filePath.split(/[\\/]/).pop()}`);
+                }
+              } catch (err) {
+                console.error("Failed to open file in code canvas:", err);
+              }
+            }}
+          >
+            <span className="tool-call-card__diff-add">+{call.diff.additions}</span>
+            <span className="tool-call-card__diff-del">−{call.diff.deletions}</span>
+          </span>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => setIsOpen(!isOpen)}>
           <span className="tool-call-card__status-text">
             ({getStatusText()})
           </span>
+          {isOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         </div>
-        {isOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
       </header>
 
       {isOpen && (
@@ -3679,8 +4287,69 @@ const MessageContent = React.memo(function MessageContent({ message }: { message
     [message.content],
   );
 
+  const openPdf = async (path: string) => {
+    if (!window.aios) {
+      toast.error('Local-only feature', 'Opening files is only supported in the desktop application.');
+      return;
+    }
+    try {
+      await window.aios.shell.exec(`start "" "${path}"`);
+      toast.success('Opening document', `Opening ${path.split(/[\\/]/).pop()} in your default PDF viewer.`);
+    } catch (e: any) {
+      toast.error('Failed to open PDF', e.message || String(e));
+    }
+  };
+
   return (
     <div className="msg-content">
+      {/* File Attachments */}
+      {message.files && message.files.length > 0 && (
+        <div className="msg-attachments-container">
+          {message.files.map((file, fIdx) => {
+            const isPdf = file.toLowerCase().endsWith('.pdf');
+            const name = file.split(/[\\/]/).pop() || file;
+            if (isPdf) {
+              return (
+                <div key={fIdx} className="pdf-attachment-card glass-card">
+                  <div className="pdf-card-icon-wrap">
+                    <svg className="pdf-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                  </div>
+                  <div className="pdf-card-details">
+                    <span className="pdf-card-title" title={file}>{name}</span>
+                    <span className="pdf-card-subtitle">Document · PDF</span>
+                  </div>
+                  <div className="pdf-card-actions">
+                    <button
+                      type="button"
+                      className="pdf-card-btn"
+                      onClick={() => void openPdf(file)}
+                    >
+                      <svg className="pdf-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      <span>Download and open</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div key={fIdx} className="file-attachment-chip">
+                <Paperclip size={11} />
+                <span title={file}>{name}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {segments.map((seg, idx) => {
         if (seg.type === 'code') {
           return <CodeBlockRender key={idx} seg={seg} />;
@@ -3736,11 +4405,23 @@ function CodeBlockRender({ seg }: { seg: { lang: string; code: string } }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    void navigator.clipboard.writeText(seg.code).then(() => {
-      setCopied(true);
-      toast.success('Copied code to clipboard');
-      setTimeout(() => setCopied(false), 2000);
-    });
+    try {
+      if (window.aios?.clipboard) {
+        window.aios.clipboard.writeText(seg.code);
+        setCopied(true);
+        toast.success('Copied code to clipboard');
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        void navigator.clipboard.writeText(seg.code).then(() => {
+          setCopied(true);
+          toast.success('Copied code to clipboard');
+          setTimeout(() => setCopied(false), 2000);
+        });
+      }
+    } catch (e: any) {
+      console.error("Clipboard copy failed:", e);
+      toast.error('Copy failed', 'Please copy manually.');
+    }
   };
 
   return (

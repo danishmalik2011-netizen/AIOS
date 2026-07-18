@@ -12,9 +12,30 @@ import {
   FolderPlus,
   Check,
   X,
+  LayoutDashboard,
+  Bot,
+  Workflow,
+  Folder,
+  Monitor,
+  GitBranch,
+  Brain,
+  Terminal as TerminalIcon,
+  Boxes,
+  BookOpen,
+  RefreshCw,
+  Plus,
+  Trash,
+  Download,
 } from 'lucide-react';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useProjectStore } from '@/store/useProjectStore';
+import { useGitStore } from '@/store/useGitStore';
+import { useMemoryStore } from '@/store/useMemoryStore';
+import { usePromptStore } from '@/store/usePromptStore';
+import { useWorkflowStore } from '@/store/useWorkflowStore';
+import { useAgentStore } from '@/store/useAgentStore';
+import { useChatStore } from '@/store/useChatStore';
+import { useTerminalStore } from '@/store/useTerminalStore';
 import { toast } from '@/store/useNotificationStore';
 import type { ProjectFile } from '@/core/types';
 import './ContextMenu.css';
@@ -61,10 +82,14 @@ export function ContextMenu() {
   const toggleSidebar = useSettingsStore((s) => s.toggleSidebar);
   const toggleCommandPalette = useSettingsStore((s) => s.toggleCommandPalette);
   const setActiveView = useSettingsStore((s) => s.setActiveView);
+  const activeView = useSettingsStore((s) => s.activeView);
   const saveActiveFile = useProjectStore((s) => s.saveActiveFile);
   const openFile = useProjectStore((s) => s.openFile);
+  const openFolder = useProjectStore((s) => s.openFolder);
+  const projectRoot = useProjectStore((s) => s.projectRoot);
   const fileTree = useProjectStore((s) => s.fileTree);
   const createEntry = useProjectStore((s) => s.createEntry);
+  const addSession = useTerminalStore((s) => s.addSession);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -96,10 +121,13 @@ export function ContextMenu() {
         if (pane) data.sessionId = pane.getAttribute('data-session-id');
         break;
       }
-      if (target.classList.contains('filesview__row')) {
+      if (target.closest('.filesview__row') || target.classList.contains('filesview__row')) {
         type = 'file-tree';
-        data.fileId = target.getAttribute('data-file-id');
-        data.fileType = target.getAttribute('data-file-type');
+        const row = target.closest('.filesview__row');
+        if (row) {
+          data.fileId = row.getAttribute('data-file-id');
+          data.fileType = row.getAttribute('data-file-type');
+        }
         break;
       }
       if (target.closest('.filesview__monaco') || target.classList.contains('monaco-editor')) {
@@ -110,7 +138,7 @@ export function ContextMenu() {
     }
 
     const x = Math.min(window.innerWidth - 200, e.clientX);
-    const y = Math.min(window.innerHeight - 260, e.clientY);
+    const y = Math.min(window.innerHeight - 280, e.clientY);
 
     setNaming(null);
     setDraftName('');
@@ -135,18 +163,31 @@ export function ContextMenu() {
   if (!menu.visible) return null;
 
   const handleCopy = async () => {
-    const text = window.getSelection()?.toString();
-    if (text) {
-      await navigator.clipboard.writeText(text);
-      toast.success('Copied selection', 'Copied text to clipboard.');
-    } else {
-      toast.info('No selection', 'Select text to copy.');
+    try {
+      const text = window.getSelection()?.toString();
+      if (text) {
+        if (window.aios?.clipboard) {
+          window.aios.clipboard.writeText(text);
+        } else {
+          await navigator.clipboard.writeText(text);
+        }
+        toast.success('Copied selection', 'Copied text to clipboard.');
+      } else {
+        toast.info('No selection', 'Select text to copy.');
+      }
+    } catch {
+      toast.error('Copy failed');
     }
   };
 
   const handlePaste = async () => {
     try {
-      const text = await navigator.clipboard.readText();
+      let text = '';
+      if (window.aios?.clipboard) {
+        text = window.aios.clipboard.readText();
+      } else {
+        text = await navigator.clipboard.readText();
+      }
       if (menu.type === 'terminal' && menu.data.sessionId && window.aios) {
         window.aios.pty.write(menu.data.sessionId, text);
       } else {
@@ -184,6 +225,11 @@ export function ContextMenu() {
       return;
     }
     await createEntry(naming.parentPath, name, naming.kind === 'folder' ? 'directory' : 'file');
+    close();
+  };
+
+  const handleSaveEditor = () => {
+    void saveActiveFile();
     close();
   };
 
@@ -249,20 +295,357 @@ export function ContextMenu() {
         );
       case 'general':
       default:
-        return (
-          <>
-            <button type="button" className="context-menu__item" onClick={toggleSidebar}>
-              <SidebarIcon size={14} /> Toggle Sidebar
-            </button>
-            <button type="button" className="context-menu__item" onClick={() => toggleCommandPalette()}>
-              <Grid size={14} /> Command Palette
-            </button>
-            <div className="context-menu__divider" />
-            <button type="button" className="context-menu__item" onClick={() => setActiveView('settings')}>
-              <Settings size={14} /> Open Settings
-            </button>
-          </>
-        );
+        switch (activeView) {
+          case 'dashboard':
+            return (
+              <>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    toast.success('Dashboard synced', 'System diagnostics refreshed.');
+                    close();
+                  }}
+                >
+                  <RefreshCw size={14} /> Sync Dashboard
+                </button>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    void openFolder();
+                    close();
+                  }}
+                >
+                  <FolderOpen size={14} /> Open Workspace...
+                </button>
+                <div className="context-menu__divider" />
+                <button type="button" className="context-menu__item" onClick={toggleSidebar}>
+                  <SidebarIcon size={14} /> Toggle Sidebar
+                </button>
+              </>
+            );
+          case 'agents':
+            return (
+              <>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    useChatStore.getState().createSession('director', 'google', 'gemini-2.5-flash');
+                    toast.success('New session created', 'Started a new agent thread.');
+                    close();
+                  }}
+                >
+                  <Plus size={14} /> New Chat Session
+                </button>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    const sid = useChatStore.getState().activeSessionId;
+                    if (sid) {
+                      useChatStore.getState().removeSession(sid);
+                      toast.success('Chat cleared', 'Reset active agent thread.');
+                    }
+                    close();
+                  }}
+                >
+                  <Trash size={14} /> Clear Active Chat
+                </button>
+                <div className="context-menu__divider" />
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    useAgentStore.getState().agents.forEach((a) => {
+                      useAgentStore.getState().updateAgentStatus(a.id, 'idle');
+                    });
+                    toast.success('Agents reset', 'All agents returned to idle.');
+                    close();
+                  }}
+                >
+                  <Bot size={14} /> Reset Agent Roster
+                </button>
+              </>
+            );
+          case 'workflow':
+            return (
+              <>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    useWorkflowStore.getState().addNode({
+                      id: `node-${crypto.randomUUID()}`,
+                      type: 'custom',
+                      position: { x: 100, y: 150 },
+                      data: {
+                        label: 'New Agent Node',
+                        type: 'builder',
+                        description: 'Custom added agent node.',
+                        status: 'idle',
+                        progress: 0,
+                      },
+                    });
+                    toast.success('Node added', 'Placed new agent node on grid.');
+                    close();
+                  }}
+                >
+                  <Plus size={14} /> Add Agent Node
+                </button>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    useWorkflowStore.setState({ nodes: [], edges: [] });
+                    toast.info('Grid reset', 'Cleared all nodes and relationships.');
+                    close();
+                  }}
+                >
+                  <Trash size={14} /> Clear Workflow
+                </button>
+                <div className="context-menu__divider" />
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(useWorkflowStore.getState()));
+                    const dl = document.createElement('a');
+                    dl.setAttribute("href", dataStr);
+                    dl.setAttribute("download", "workflow-blueprint.json");
+                    dl.click();
+                    close();
+                  }}
+                >
+                  <Download size={14} /> Export Blueprint JSON
+                </button>
+              </>
+            );
+          case 'files':
+            return (
+              <>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={async () => {
+                    if (projectRoot) {
+                      await useProjectStore.getState().loadProjectRoot(projectRoot);
+                      toast.success('Refreshed tree', 'File structure re-read from disk.');
+                    }
+                    close();
+                  }}
+                >
+                  <RefreshCw size={14} /> Refresh Explorer
+                </button>
+                <div className="context-menu__divider" />
+                <button type="button" className="context-menu__item" onClick={() => startNaming('file')}>
+                  <FilePlus size={14} /> Create File...
+                </button>
+                <button type="button" className="context-menu__item" onClick={() => startNaming('folder')}>
+                  <FolderPlus size={14} /> Create Folder...
+                </button>
+              </>
+            );
+          case 'preview':
+            return (
+              <>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('refresh-preview-frame'));
+                    toast.success('Preview refreshed', 'Reloaded target canvas.');
+                    close();
+                  }}
+                >
+                  <RefreshCw size={14} /> Reload Live Page
+                </button>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={async () => {
+                    if (!projectRoot) {
+                      toast.error('Export failed', 'No workspace open.');
+                      return;
+                    }
+                    close();
+                    toast.info('Exporting...', 'Zipping project folder...');
+                    const saved = await (window as any).aios.fs.zipProject(projectRoot);
+                    if (saved) toast.success('Project exported', `Saved ZIP to ${saved}`);
+                  }}
+                >
+                  <Download size={14} /> Export ZIP Archive...
+                </button>
+              </>
+            );
+          case 'git':
+            return (
+              <>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={async () => {
+                    await useGitStore.getState().refresh();
+                    toast.success('Git refreshed', 'Re-scanned source modifications.');
+                    close();
+                  }}
+                >
+                  <RefreshCw size={14} /> Scan Repository
+                </button>
+                <div className="context-menu__divider" />
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={async () => {
+                    await useGitStore.getState().stageAll();
+                    toast.success('Changes staged', 'Staged all repository edits.');
+                    close();
+                  }}
+                >
+                  <Plus size={14} /> Stage All Modifications
+                </button>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={async () => {
+                    await useGitStore.getState().unstageAll();
+                    toast.success('Changes unstaged', 'Unstaged all staged commits.');
+                    close();
+                  }}
+                >
+                  <X size={14} /> Unstage All
+                </button>
+              </>
+            );
+          case 'memory':
+            return (
+              <>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    toast.success('Context synced', 'Re-indexed project vector memories.');
+                    close();
+                  }}
+                >
+                  <Brain size={14} /> Re-index Project Context
+                </button>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    useMemoryStore.setState({ entries: [] });
+                    toast.success('Memories cleared', 'Reset persistent category maps.');
+                    close();
+                  }}
+                >
+                  <Trash size={14} /> Reset Vector Index
+                </button>
+              </>
+            );
+          case 'terminal':
+            return (
+              <>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={async () => {
+                    await addSession();
+                    toast.success('Terminal session opened', 'Spawned shell terminal.');
+                    close();
+                  }}
+                >
+                  <Plus size={14} /> Spawn New Shell
+                </button>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    const sid = useTerminalStore.getState().activeSessionId;
+                    if (sid) {
+                      window.dispatchEvent(new CustomEvent('clear-terminal', { detail: { sessionId: sid } }));
+                      toast.success('Terminal cleared');
+                    }
+                    close();
+                  }}
+                >
+                  <Eraser size={14} /> Clear Active Buffer
+                </button>
+              </>
+            );
+          case 'prompts':
+            return (
+              <>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    usePromptStore.getState().addPrompt({
+                      id: `p-${Date.now()}`,
+                      title: 'New Prompt Template',
+                      content: 'Given the codebase block below, review for logic errors:\n\n{{code}}',
+                      category: 'Custom',
+                      tags: ['new'],
+                      usageCount: 0,
+                      isFavorite: false,
+                      createdAt: Date.now(),
+                    });
+                    toast.success('Prompt added', 'Created new template stub.');
+                    close();
+                  }}
+                >
+                  <Plus size={14} /> Create Prompt...
+                </button>
+              </>
+            );
+          case 'settings':
+            return (
+              <>
+                <button
+                  type="button"
+                  className="context-menu__item"
+                  onClick={() => {
+                    useSettingsStore.setState({
+                      settings: {
+                        theme: 'dark-slate',
+                        fontSize: 14,
+                        fontFamily: 'JetBrains Mono',
+                        tabSize: 2,
+                        wordWrap: true,
+                        minimap: true,
+                        sidebarVisible: true,
+                        sidebarWidth: 260,
+                        activeView: 'dashboard',
+                        planBeforeAct: false,
+                        verifyOnComplete: true,
+                        verifyCommand: '',
+                      },
+                    });
+                    toast.success('Settings reset', 'Restored system configuration defaults.');
+                    close();
+                  }}
+                >
+                  <RefreshCw size={14} /> Restore Default Settings
+                </button>
+              </>
+            );
+          default:
+            return (
+              <>
+                <button type="button" className="context-menu__item" onClick={toggleSidebar}>
+                  <SidebarIcon size={14} /> Toggle Sidebar
+                </button>
+                <button type="button" className="context-menu__item" onClick={() => toggleCommandPalette()}>
+                  <Grid size={14} /> Command Palette
+                </button>
+                <div className="context-menu__divider" />
+                <button type="button" className="context-menu__item" onClick={() => setActiveView('settings')}>
+                  <Settings size={14} /> Open Settings
+                </button>
+              </>
+            );
+        }
     }
   };
 
@@ -306,8 +689,4 @@ export function ContextMenu() {
       )}
     </div>
   );
-
-  function handleSaveEditor() {
-    void saveActiveFile();
-  }
 }

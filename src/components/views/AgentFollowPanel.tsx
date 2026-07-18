@@ -263,19 +263,17 @@ function PreviewTab() {
   const isConnected = Boolean(url.trim());
 
   useEffect(() => {
-    const onFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
-    document.addEventListener('fullscreenchange', onFsChange);
-    return () => document.removeEventListener('fullscreenchange', onFsChange);
-  }, []);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
 
   const toggleFullscreen = () => {
-    const el = frameRef.current;
-    if (!el) return;
-    if (document.fullscreenElement) {
-      void document.exitFullscreen();
-    } else {
-      void el.requestFullscreen?.();
-    }
+    setIsFullscreen(!isFullscreen);
   };
 
   const handleRefresh = () => {
@@ -333,7 +331,35 @@ function PreviewTab() {
         </div>
       </div>
       <div className="canvas-panel__preview-canvas">
-        <div className="canvas-panel__frame" style={{ maxWidth: DEVICE_WIDTHS[device] }} ref={frameRef}>
+        <div className={`canvas-panel__frame ${isFullscreen ? 'is-fullscreen' : ''}`} style={{ maxWidth: DEVICE_WIDTHS[device] }} ref={frameRef}>
+          {isFullscreen && (
+            <div className="canvas-panel__fullscreen-controls">
+              {(['desktop', 'laptop', 'tablet', 'mobile'] as DeviceMode[]).map((d) => {
+                const Icon = d === 'desktop' ? Monitor : d === 'laptop' ? Monitor : d === 'tablet' ? Tablet : Smartphone;
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    className={`canvas-panel__icon-btn ${device === d ? 'is-active' : ''}`}
+                    onClick={() => setDevice(d)}
+                    title={d}
+                  >
+                    <Icon size={12} />
+                  </button>
+                );
+              })}
+              <div className="fullscreen-divider" />
+              <button
+                type="button"
+                className="canvas-panel__icon-btn text-accent"
+                onClick={toggleFullscreen}
+                title="Exit fullscreen"
+              >
+                <Minimize2 size={12} />
+              </button>
+            </div>
+          )}
+
           {isConnected ? (
             <iframe
               key={iframeKey}

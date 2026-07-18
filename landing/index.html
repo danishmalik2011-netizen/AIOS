@@ -13,11 +13,23 @@
   <link rel="apple-touch-icon" href="assets/logo.png?v=1.0.3" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Chivo+Mono:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css?v=1.0.3" />
   <title>AIOS — AI Agent Operating System</title>
 </head>
 <body>
+  <!-- Rig.ai UI Overlays -->
+  <svg width="0" height="0" aria-hidden="true" style="display: none;">
+    <filter id="grainy" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.4" numOctaves="4" stitchTiles="stitch" seed="0">
+        <animate attributeName="seed" from="0" to="100" dur="10s" repeatCount="indefinite"></animate>
+      </feTurbulence>
+      <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1 0 0 0 0"></feColorMatrix>
+    </filter>
+  </svg>
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="rgb-fringe" aria-hidden="true"></div>
   <svg width="0" height="0" style="position: absolute" aria-hidden="true">
     <defs>
       <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -157,68 +169,13 @@
     <!-- Navigation -->
     <header class="nav" role="banner">
       <div class="nav__inner">
-        <a href="/" class="brand" aria-label="AIOS Home">
-          <span class="brand__logo-wrap" aria-hidden="true">
-            <svg class="brand__logo" viewBox="0 0 200 200" width="36" height="36" fill="none" stroke="currentColor" style="display: block; width: 100%; height: 100%;">
-              {/* Static Center Core */}
-              <circle cx="100" cy="100" r="34" fill="var(--bg-primary, #0b0f19)" stroke="none" />
-              <circle cx="100" cy="100" r="28" stroke="currentColor" stroke-width="3.5" />
-              <circle cx="100" cy="100" r="34" stroke="currentColor" stroke-width="2.2" />
-              <text x="100" y="106" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="17.5" fill="currentColor" stroke="none" text-anchor="middle" letter-spacing="0.02em">AIOS</text>
-
-              {/* Rotating Outer Tech Ring & Spokes */}
-              <g stroke="currentColor">
-                {/* Outer double rings */}
-                <circle cx="100" cy="100" r="62" stroke-width="2.2" opacity="0.8" />
-                <circle cx="100" cy="100" r="68" stroke-width="1.5" opacity="0.5" />
-
-                {/* 8 Radial Spokes */}
-                <line x1="134" y1="100" x2="162" y2="100" stroke-width="2.2" />
-                <line x1="124.04" y1="124.04" x2="143.84" y2="143.84" stroke-width="2.2" />
-                <line x1="100" y1="134" x2="100" y2="162" stroke-width="2.2" />
-                <line x1="75.96" y1="124.04" x2="56.16" y2="143.84" stroke-width="2.2" />
-                <line x1="66" y1="100" x2="38" y2="100" stroke-width="2.2" />
-                <line x1="75.96" y1="75.96" x2="56.16" y2="56.16" stroke-width="2.2" />
-                <line x1="100" y1="66" x2="100" y2="38" stroke-width="2.2" />
-                <line x1="124.04" y1="75.96" x2="143.84" y2="56.16" stroke-width="2.2" />
-
-                {/* 8 Outer Nodes (Circle + Dot) */}
-                <g transform="translate(165, 100)">
-                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
-                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
-                </g>
-                <g transform="translate(145.96, 145.96)">
-                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
-                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
-                </g>
-                <g transform="translate(100, 165)">
-                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
-                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
-                </g>
-                <g transform="translate(54.04, 145.96)">
-                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
-                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
-                </g>
-                <g transform="translate(35, 100)">
-                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
-                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
-                </g>
-                <g transform="translate(54.04, 54.04)">
-                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
-                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
-                </g>
-                <g transform="translate(100, 35)">
-                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
-                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
-                </g>
-                <g transform="translate(145.96, 54.04)">
-                  <circle cx="0" cy="0" r="8" fill="var(--bg-primary, #0b0f19)" stroke-width="2.2" />
-                  <circle cx="0" cy="0" r="4.2" fill="currentColor" stroke="none" />
-                </g>
-              </g>
-            </svg>
-          </span>
-          <span class="brand__name"><svg class="brand__a" viewBox="40 40 120 120" aria-hidden="true"><path d="M66 146 L100 54 L134 146" fill="none" stroke="currentColor" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="brand__rest">IOS</span></span>
+        <a href="/" class="brand" aria-label="AIOS Home" style="display: flex; align-items: center; gap: 0.75rem;">
+          <svg viewBox="0 0 120 120" width="32" height="32" fill="var(--text-primary)">
+            <polygon points="35,10 110,10 110,85 85,110 10,110 10,35" fill="var(--accent-primary)" />
+            <polygon points="35,22 98,22 98,85 85,98 22,98 22,35" fill="var(--bg-primary)" />
+            <polygon points="45,35 85,35 85,75 75,85 35,85 35,45" fill="var(--text-primary)" />
+          </svg>
+          <span class="brand__name" style="font-family: var(--font-mono); font-weight: 900; font-size: 1.5rem; letter-spacing: 0.1em; color: var(--text-primary);">AIOS_</span>
         </a>
 
         <nav class="nav__links" aria-label="Main navigation">
@@ -232,9 +189,8 @@
           </button>
         </nav>
 
-        <a class="nav__cta" href="#download">
-          <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
-          <span>Download</span>
+        <a class="btn-chamfer btn-dark nav__cta" href="#download" style="padding: 0.6rem 1rem;">
+          <span>Get Early Access</span>
         </a>
 
         <button class="nav__menu" id="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
@@ -252,64 +208,88 @@
     </header>
 
     <!-- Hero -->
-    <main class="hero" role="main">
-      <div class="hero__glow" aria-hidden="true"></div>
+    <main class="hero" role="main" style="position: relative; overflow: hidden;">
+      <!-- Hero watermark (Rig style) -->
+      <svg class="hero-watermark" viewBox="0 0 163 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="position: absolute; right: -5%; top: -10%; width: 50%; opacity: 0.03; color: var(--text-primary); pointer-events: none;">
+        <path d="M162.809 89.4121H82.6844C74.7832 89.4121 67.2059 92.5528 61.6216 98.1424C56.0441 103.725 52.9111 111.294 52.9111 119.185V159.996H72.1703V126.45C72.1703 116.812 72.3437 108.001 72.3437 108.001H162.809V89.4121Z" fill="currentColor"></path>
+        <path d="M162.808 118.61H111.815C103.914 118.61 96.3368 121.751 90.7524 127.341C85.1749 132.923 82.042 140.492 82.042 148.384V159.997H104.909V144.052C104.909 134.414 104.909 134.082 104.909 134.082H162.808V118.61Z" fill="currentColor"></path>
+        <path d="M162.809 146.002C144.706 146.002 134.567 145.996 116.464 146.004V160H162.809V146.002Z" fill="currentColor"></path>
+        <path d="M162.809 0.00304711H70.8863C52.0802 0.00304711 34.0448 7.47609 20.7501 20.7772C7.46368 34.07 0 52.0946 0 70.8889C0 99.2859 0 140.767 0 159.997H15.7849V67.7138C15.7849 53.2572 15.7849 41.5373 15.7849 41.5373H162.812V0L162.809 0.00304711Z" fill="currentColor"></path>
+        <path d="M162.809 51.8704H56.8042C48.903 51.8704 41.3258 55.0111 35.7414 60.6008C30.1639 66.1835 27.031 73.7522 27.031 81.6437V159.997H41.8159V96.3178C41.8159 86.6801 41.8159 78.8688 41.8159 78.8688H162.809V51.8674V51.8704Z" fill="currentColor"></path>
+      </svg>
 
       <div class="hero__content reveal">
-        <span class="pill">
-          <svg class="ico" aria-hidden="true"><use href="#i-sparkles" /></svg>
-          <span>The AI Agent Operating System</span>
-        </span>
-
-        <h1 class="hero__title">
-          One command center for <span style="color: var(--accent-primary)">AI-assisted building</span>
+        <h1 class="hero__title" style="font-size: var(--text-5xl); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 1.5rem;">
+          On-device AI coding.<br />
+          BYOK Native. Full privacy.
         </h1>
 
-        <p class="hero__sub">
-          AIOS treats agents as first-class citizens — they plan, build, review, test, and deploy,
-          coordinated through visual workflows and grounded in persistent project memory.
-          Not a wrapper. An operating system for software creation.
+        <p class="hero__sub" style="font-size: var(--text-lg); color: var(--text-secondary); max-width: 600px; margin: 0 auto 2.5rem;">
+          A complete AI coding agent that executes entirely on your machine. Bring your own keys (BYOK). Zero telemetry. Local first.
         </p>
 
-        <div class="hero__actions">
-          <a class="btn btn--primary btn--lg" href="/downloads/AIOS%20Setup%201.2.5.exe" download>
-            <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
-            <span>Download for Windows</span>
-            <svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg>
+        <div class="hero__actions" style="justify-content: center; gap: 1rem; flex-wrap: wrap;">
+          <a class="btn-chamfer" href="/downloads/AIOS%20Setup%201.3.3.exe" download>
+            Join Waitlist
           </a>
-          <a class="btn btn--ghost btn--lg" href="#workspaces">
-            <span>Explore Workspaces</span>
-            <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg>
+          <a class="btn-chamfer btn-dark" href="#workspaces" style="border: 1px solid var(--border-default);">
+            Our Approach
           </a>
-        </div>
-
-        <div class="hero__meta">
-          <span><svg class="ico" aria-hidden="true"><use href="#i-sparkles" /></svg> Real-time orchestration</span>
-          <span><svg class="ico" aria-hidden="true"><use href="#i-lock" /></svg> Local-first & private</span>
-          <span><svg class="ico" aria-hidden="true"><use href="#i-brain" /></svg> Multi-model agents</span>
-          <span><svg class="ico" aria-hidden="true"><use href="#i-git-branch" /></svg> Git-native workflows</span>
         </div>
       </div>
 
-      <!-- Interactive Mockup -->
-      <div class="mockup glass reveal" role="img" aria-label="AIOS desktop application preview">
-        <div class="mockup__header">
+      <!-- Hero Ticker -->
+      <div class="hero-ticker" style="margin-top: 4rem; width: 100%; overflow: hidden; background: var(--bg-secondary); border-top: 1px solid var(--border-default); border-bottom: 1px solid var(--border-default); padding: 1rem 0;">
+        <div class="hero-ticker-inner" style="display: flex; gap: 2rem; white-space: nowrap; font-family: var(--font-mono); font-size: var(--text-sm); text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-primary); animation: ticker 20s linear infinite;">
+          <span>Zero telemetry</span> <span>&bull;</span> <span>BYOK Architecture</span> <span>&bull;</span> <span>Local First</span> <span>&bull;</span> <span>Your hardware, your rules</span> <span>&bull;</span> <span>Full Privacy</span> <span>&bull;</span> <span>Specialized SLM</span> <span>&bull;</span> <span>Unbounded context</span> <span>&bull;</span>
+          <!-- Duplicate for seamless loop -->
+          <span>Zero telemetry</span> <span>&bull;</span> <span>BYOK Architecture</span> <span>&bull;</span> <span>Local First</span> <span>&bull;</span> <span>Your hardware, your rules</span> <span>&bull;</span> <span>Full Privacy</span> <span>&bull;</span> <span>Specialized SLM</span> <span>&bull;</span> <span>Unbounded context</span>
+        </div>
+      </div>
+    </main>
+    <style>
+      @keyframes ticker {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+    </style>
+
+      <!-- Interactive Mockup Simulation -->
+      <div class="mockup reveal" role="img" aria-label="AIOS desktop application preview" style="background: var(--bg-primary); border: 1px solid var(--border-default); box-shadow: 20px 20px 0px rgba(0,0,0,0.5);">
+        <div class="mockup__header" style="border-bottom: 1px solid var(--border-default); background: var(--bg-elevated); padding: 0.5rem 1rem;">
           <div class="mockup__dots">
             <span class="dot red" aria-hidden="true"></span>
             <span class="dot yellow" aria-hidden="true"></span>
             <span class="dot green" aria-hidden="true"></span>
           </div>
+          
+          <!-- Simulation Status Badge -->
+          <div class="mockup__sim-badge">
+            <span class="mockup__sim-pulse"></span>
+            <span class="mockup__sim-text">Simulator Active: Scaffolding react contact form</span>
+          </div>
+
           <div class="mockup__tabs" role="tablist" aria-label="Application views">
-            <button class="mockup__tab mockup__tab--active" role="tab" aria-selected="true" data-view="dashboard">Mission Control</button>
-            <button class="mockup__tab" role="tab" aria-selected="false" data-view="agents">Agents</button>
-            <button class="mockup__tab" role="tab" aria-selected="false" data-view="workspaces">Workspaces</button>
-            <button class="mockup__tab" role="tab" aria-selected="false" data-view="terminal">Terminal</button>
+            <button class="mockup__tab mockup__tab--active" role="tab" aria-selected="true" data-view="dashboard" id="tab-dashboard">Mission Control</button>
+            <button class="mockup__tab" role="tab" aria-selected="false" data-view="agents" id="tab-agents">Agent Fleet</button>
+            <button class="mockup__tab" role="tab" aria-selected="false" data-view="workspaces" id="tab-workspaces">Workspaces</button>
+            <button class="mockup__tab" role="tab" aria-selected="false" data-view="canvas" id="tab-canvas">Code Canvas</button>
+            <button class="mockup__tab" role="tab" aria-selected="false" data-view="terminal" id="tab-terminal">Terminal</button>
           </div>
           <div class="mockup__window-title">AIOS — dev-mode</div>
         </div>
 
         <div class="mockup__body">
-          <!-- Dashboard View -->
+          <!-- Simulation Progress Steps -->
+          <div class="mockup__progress-steps">
+            <span class="step-indicator active" id="step-0">1. Input Prompt</span>
+            <span class="step-indicator" id="step-1">2. Agent Roster</span>
+            <span class="step-indicator" id="step-2">3. Code Canvas</span>
+            <span class="step-indicator" id="step-3">4. Test Suite</span>
+            <span class="step-indicator" id="step-4">5. Git Commit</span>
+          </div>
+
+          <!-- Mission Control / Dashboard View -->
           <div class="mockup__view mockup__view--active" role="tabpanel" id="view-dashboard" aria-labelledby="tab-dashboard">
             <div class="mockup__metrics">
               <div class="m-card">
@@ -318,50 +298,16 @@
               </div>
               <div class="m-card">
                 <span class="m-card__label">Tasks Completed</span>
-                <span class="m-card__value">284</span>
+                <span class="m-card__value" id="dashboard-tasks">284</span>
               </div>
               <div class="m-card">
                 <span class="m-card__label">Lines Written</span>
-                <span class="m-card__value">14.2k</span>
+                <span class="m-card__value" id="dashboard-lines">14.2k</span>
               </div>
             </div>
             <div class="mockup__activity">
               <div class="m-activity__hdr">Live System Activity</div>
-              <pre class="m-log" aria-label="System activity log"><span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg></span> <span class="t-agent">[CodeSmith]</span> Implemented UserAuthService in <span class="t-path">auth/service.ts</span>
-<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg></span> <span class="t-agent">[Sentinel]</span> Code review passed, 0 vulnerabilities flagged
-<span class="t-info"><svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg></span> <span class="t-agent">[TestRunner]</span> Running test suites: 42/42 specs passed <span class="t-dim">(100% coverage)</span>
-<span class="t-prompt">aios <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cmd">monitoring pipelines...</span></pre>
-            </div>
-          </div>
-
-          <!-- Agents View -->
-          <div class="mockup__view" role="tabpanel" id="view-agents" aria-labelledby="tab-agents" hidden>
-            <div class="mockup__agents-grid">
-              <div class="a-card">
-                <span class="a-card__avatar" aria-hidden="true"><svg class="ico" style="width:20px;height:20px"><use href="#i-brain" /></svg></span>
-                <div class="a-card__info">
-                  <span class="a-card__name">Architect</span>
-                  <span class="a-card__status status-idle">Planning</span>
-                </div>
-              </div>
-              <div class="a-card a-card--active">
-                <span class="a-card__avatar" aria-hidden="true"><svg class="ico" style="width:20px;height:20px"><use href="#i-cpu" /></svg></span>
-                <div class="a-card__info">
-                  <span class="a-card__name">CodeSmith</span>
-                  <span class="a-card__status status-running">Running</span>
-                </div>
-              </div>
-              <div class="a-card">
-                <span class="a-card__avatar" aria-hidden="true"><svg class="ico" style="width:20px;height:20px"><use href="#i-shield" /></svg></span>
-                <div class="a-card__info">
-                  <span class="a-card__name">Sentinel</span>
-                  <span class="a-card__status status-idle">Review</span>
-                </div>
-              </div>
-            </div>
-            <div class="mockup__agent-chat">
-              <div class="chat-bubble user">Review the latest authentication handler</div>
-              <div class="chat-bubble assistant">Analyzed <span class="t-path">auth/service.ts</span>. Injecting safe session middleware. Verification complete.</div>
+              <pre class="m-log" id="dashboard-log" aria-label="System activity log"><span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg></span> <span class="t-agent">[Director]</span> System idle. Awaiting workspace prompt...</pre>
             </div>
           </div>
 
@@ -369,32 +315,83 @@
           <div class="mockup__view" role="tabpanel" id="view-workspaces" aria-labelledby="tab-workspaces" hidden>
             <div class="w-setup">
               <div class="w-input-row">
-                <span class="w-prompt">$ aios deploy --preset</span>
-                <span class="w-cmd-val">claude</span>
+                <span class="w-prompt">$</span> <span class="w-cmd-val">aios -r ./backend-api-v2</span>
               </div>
-              <button class="w-btn" type="button">Run Workspace</button>
+              <button class="w-btn">Connect</button>
             </div>
-            <div class="w-status">Docker environment ready. Initializing isolated CLI terminals...</div>
+            <div class="t-pane-body" style="background: var(--bg-primary); border: 1px solid var(--border-default); border-radius: var(--radius-md);">
+              <div style="margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+                <span style="color: var(--text-primary); font-weight: bold;">Active Workspaces</span>
+              </div>
+              <div style="padding: 0.5rem; background: var(--bg-hover); border-left: 2px solid var(--accent-primary); color: var(--text-primary); display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span>~/projects/aios-landing-site</span>
+                <span style="color: var(--status-success);">Active</span>
+              </div>
+              <div style="padding: 0.5rem; border: 1px solid var(--border-default); display: flex; justify-content: space-between;">
+                <span>~/projects/backend-api-v2</span>
+                <span style="color: var(--text-muted);">Idle</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Agent Fleet View -->
+          <div class="mockup__view" role="tabpanel" id="view-agents" aria-labelledby="tab-agents" hidden>
+            <div class="mockup__agents-grid">
+              <div class="a-card" id="agent-card-architect">
+                <span class="a-card__avatar" aria-hidden="true"><svg class="ico" style="width:20px;height:20px"><use href="#i-brain" /></svg></span>
+                <div class="a-card__info">
+                  <span class="a-card__name">Architect</span>
+                  <span class="a-card__status status-idle" id="agent-status-architect">Idle</span>
+                </div>
+              </div>
+              <div class="a-card" id="agent-card-codesmith">
+                <span class="a-card__avatar" aria-hidden="true"><svg class="ico" style="width:20px;height:20px"><use href="#i-cpu" /></svg></span>
+                <div class="a-card__info">
+                  <span class="a-card__name">CodeSmith</span>
+                  <span class="a-card__status status-idle" id="agent-status-codesmith">Idle</span>
+                </div>
+              </div>
+              <div class="a-card" id="agent-card-sentinel">
+                <span class="a-card__avatar" aria-hidden="true"><svg class="ico" style="width:20px;height:20px"><use href="#i-shield" /></svg></span>
+                <div class="a-card__info">
+                  <span class="a-card__name">Sentinel</span>
+                  <span class="a-card__status status-idle" id="agent-status-sentinel">Idle</span>
+                </div>
+              </div>
+            </div>
+            <div class="mockup__agent-chat" id="agent-chat-container">
+              <div class="chat-bubble user" id="chat-bubble-user">Ready. Input: "scaffold contact form"</div>
+              <div class="chat-bubble assistant" id="chat-bubble-assistant" style="opacity: 0;">Awaiting pipeline run...</div>
+            </div>
+          </div>
+
+          <!-- Code Canvas View (Monaco Diff Editor Mockup) -->
+          <div class="mockup__view" role="tabpanel" id="view-canvas" aria-labelledby="tab-canvas" hidden>
+            <div class="m-editor">
+              <div class="m-editor__header">
+                <span class="m-editor__tab active"><svg class="ico" style="width:12px;height:12px"><use href="#i-folder" /></svg> ContactForm.tsx</span>
+                <span class="m-editor__lang">typescript</span>
+              </div>
+              <div class="m-editor__canvas">
+                <pre class="m-editor__code" id="canvas-code-block"><code><span class="c-keyword">import</span> React <span class="c-keyword">from</span> <span class="c-str">'react'</span>;
+
+<span class="c-keyword">export function</span> <span class="c-fn">ContactForm</span>() {
+  <span class="c-keyword">return</span> (
+    <span class="c-dim">&lt;div&gt;Ready&lt;/div&gt;</span>
+  );
+}</code></pre>
+              </div>
+            </div>
           </div>
 
           <!-- Terminal View -->
           <div class="mockup__view" role="tabpanel" id="view-terminal" aria-labelledby="tab-terminal" hidden>
             <div class="t-grid">
               <div class="t-pane">
-                <div class="t-pane-hdr">claude 1 — aios</div>
-                <pre class="t-pane-body"><span class="t-dim">$ aios deploy --preset claude</span>
-<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> scaffolding workspace…</span>
-<span class="t-dim">  docker · agents · mcp servers</span>
-<span class="t-info"><svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg> Fleet Director: 6 agents online</span>
-<span class="t-prompt">aios <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cmd">building feature/auth…</span></pre>
-              </div>
-              <div class="t-pane">
-                <div class="t-pane-hdr">claude 2 — aios</div>
-                <pre class="t-pane-body"><span class="t-dim">$ aios run "add dark mode"</span>
-<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> Architect → plan ready</span>
-<span class="t-info"><svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg> CodeSmith → 3 files edited</span>
-<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> Sentinel → review passed</span>
-<span class="t-prompt">aios <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cmd">committing…</span></pre>
+                <div class="t-pane-hdr">cli-session — aios</div>
+                <pre class="t-pane-body" id="terminal-body-block"><span class="t-dim">$ aios init</span>
+<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> workspace mapped.</span>
+<span class="t-prompt">aios <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cursor"></span></pre>
               </div>
             </div>
           </div>
@@ -402,59 +399,104 @@
       </div>
     </main>
 
-    <!-- Stats -->
-    <section class="stats reveal" aria-labelledby="stats-title">
+    <!-- Brutalist Feature Grid -->
+    <section class="section problem-section reveal" aria-labelledby="how-title" style="border-top: 1px solid var(--border-default); border-bottom: 1px solid var(--border-default); padding: 4rem 0; background: var(--bg-primary);">
+      <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+        <header class="section__head" style="margin-bottom: 3rem;">
+          <div class="badge" style="margin-bottom: 1rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M 11 11 L 13 11 L 13 13 L 11 13 Z M 15 7 L 17 7 L 17 9 L 15 9 Z M 7 7 L 9 7 L 9 9 L 7 9 Z M 7 15 L 9 15 L 9 17 L 7 17 Z M 15 15 L 17 15 L 17 17 L 15 17 Z M 5 17 L 7 17 L 7 19 L 5 19 Z M 5 5 L 7 5 L 7 7 L 5 7 Z M 9 13 L 11 13 L 11 15 L 9 15 Z M 13 13 L 15 13 L 15 15 L 13 15 Z M 13 9 L 15 9 L 15 11 L 13 11 Z M 9 9 L 11 9 L 11 11 L 9 11 Z M 17 5 L 19 5 L 19 7 L 17 7 Z M 17 17 L 19 17 L 19 19 L 17 19 Z" fill="var(--red)"></path></svg>
+            THE WORKFLOW
+          </div>
+          <h2 id="how-title" class="section__title" style="font-size: var(--text-3xl); font-weight: 800; letter-spacing: -0.02em;">Three steps from idea<br>to shipped code.</h2>
+        </header>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1px; background: var(--border-default); border: 1px solid var(--border-default);">
+          
+          <div class="problem-card" style="background: var(--bg-primary); padding: 2.5rem;">
+            <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; margin-bottom: 2rem;">
+              <span>Plain language</span>
+              <span>[ 001 ]</span>
+            </div>
+            <h3 style="font-size: var(--text-xl); font-weight: 700; margin-bottom: 1rem; color: var(--text-primary);">Describe what you want.</h3>
+            <p style="color: var(--text-secondary); line-height: 1.6; font-size: var(--text-base);">Type a goal in plain language — "add a contact form", "fix the login bug". That's the only input you need.</p>
+          </div>
+
+          <div class="problem-card" style="background: var(--bg-primary); padding: 2.5rem;">
+            <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; margin-bottom: 2rem;">
+              <span>Local Agents</span>
+              <span>[ 002 ]</span>
+            </div>
+            <h3 style="font-size: var(--text-xl); font-weight: 700; margin-bottom: 1rem; color: var(--text-primary);">The agents do the work.</h3>
+            <p style="color: var(--text-secondary); line-height: 1.6; font-size: var(--text-base);">A planner breaks your goal into steps. Specialist agents write the code, review changes, and run tests locally.</p>
+          </div>
+
+          <div class="problem-card" style="background: var(--bg-primary); padding: 2.5rem;">
+            <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; margin-bottom: 2rem;">
+              <span>Git native</span>
+              <span>[ 003 ]</span>
+            </div>
+            <h3 style="font-size: var(--text-xl); font-weight: 700; margin-bottom: 1rem; color: var(--text-primary);">You review and ship.</h3>
+            <p style="color: var(--text-secondary); line-height: 1.6; font-size: var(--text-base);">See every change in a clear diff, approve what looks good, and the result is committed to git.</p>
+          </div>
+
+          <div class="problem-card" style="background: var(--bg-primary); padding: 2.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; margin-bottom: 2rem;">
+                <span>Get Started</span>
+                <span>[ Run ]</span>
+              </div>
+              <h3 style="font-size: var(--text-xl); font-weight: 700; margin-bottom: 1rem; color: var(--text-primary);">Start building today.</h3>
+              <p style="color: var(--text-secondary); line-height: 1.6; font-size: var(--text-base); margin-bottom: 1.5rem;">Download the desktop client or run directly from your CLI.</p>
+            </div>
+            <div>
+              <a class="btn-chamfer" href="#download" style="display: inline-block; padding: 0.5rem 1rem; font-size: var(--text-sm); text-decoration: none;">Get early access</a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats (Rig.ai Style) -->
+    <section class="stats reveal" aria-labelledby="stats-title" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--border-default); border-bottom: 1px solid var(--border-default); padding: 0;">
       <h2 id="stats-title" class="visually-hidden">Key Metrics</h2>
-      <div class="stat glass">
-        <span class="stat__value" data-count="12" data-suffix="+">12+</span>
-        <span class="stat__label">Integrated surfaces</span>
+      <div class="stat" style="background: var(--bg-primary); padding: 3rem 2rem; display: flex; flex-direction: column; gap: 0.5rem; text-align: center;">
+        <span class="stat__value" style="font-family: var(--font-mono); font-size: var(--text-4xl); font-weight: 700; color: var(--accent-primary);">12+</span>
+        <span class="stat__label" style="text-transform: uppercase; letter-spacing: 0.05em; font-size: var(--text-xs); color: var(--text-secondary);">Integrated surfaces</span>
       </div>
-      <div class="stat glass">
-        <span class="stat__value" data-count="6">6</span>
-        <span class="stat__label">Agent roles</span>
+      <div class="stat" style="background: var(--bg-primary); padding: 3rem 2rem; display: flex; flex-direction: column; gap: 0.5rem; text-align: center;">
+        <span class="stat__value" style="font-family: var(--font-mono); font-size: var(--text-4xl); font-weight: 700; color: var(--accent-primary);">6</span>
+        <span class="stat__label" style="text-transform: uppercase; letter-spacing: 0.05em; font-size: var(--text-xs); color: var(--text-secondary);">Agent roles</span>
       </div>
-      <div class="stat glass">
-        <span class="stat__value" data-count="100" data-suffix="%">100%</span>
-        <span class="stat__label">Local execution</span>
+      <div class="stat" style="background: var(--bg-primary); padding: 3rem 2rem; display: flex; flex-direction: column; gap: 0.5rem; text-align: center;">
+        <span class="stat__value" style="font-family: var(--font-mono); font-size: var(--text-4xl); font-weight: 700; color: var(--accent-primary);">100%</span>
+        <span class="stat__label" style="text-transform: uppercase; letter-spacing: 0.05em; font-size: var(--text-xs); color: var(--text-secondary);">Local execution</span>
       </div>
-      <div class="stat glass">
-        <span class="stat__value" data-count="0">0</span>
-        <span class="stat__label">Telemetry</span>
+      <div class="stat" style="background: var(--bg-primary); padding: 3rem 2rem; display: flex; flex-direction: column; gap: 0.5rem; text-align: center;">
+        <span class="stat__value" style="font-family: var(--font-mono); font-size: var(--text-4xl); font-weight: 700; color: var(--accent-primary);">0</span>
+        <span class="stat__label" style="text-transform: uppercase; letter-spacing: 0.05em; font-size: var(--text-xs); color: var(--text-secondary);">Telemetry</span>
       </div>
     </section>
 
     <!-- CLI Showcase -->
-    <section class="section cli-showcase reveal" aria-labelledby="cli-title">
-      <header class="section__head reveal">
-        <span class="eyebrow">Command-line first</span>
-        <h2 id="cli-title" class="section__title">One command to spin up a whole <em>agent team</em></h2>
-        <p class="section__sub">AIOS is driven entirely from the terminal. The same commands run locally, in CI, or inside the desktop app.</p>
+    <section class="section cli-showcase reveal" aria-labelledby="cli-title" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-default);">
+      <header class="section__head reveal" style="text-align: center;">
+        <div class="badge" style="margin-bottom: 1rem; align-self: center;">TERMINAL MODE</div>
+        <h2 id="cli-title" class="section__title" style="font-weight: 800; font-size: var(--text-3xl); letter-spacing: -0.02em;">Or just type a command.</h2>
+        <p class="section__sub" style="font-size: var(--text-lg); color: var(--text-secondary);">Don't want the app? The same AIOS runs from your terminal — handy for scripts and CI.</p>
       </header>
 
-      <div class="cli-window glass reveal" role="img" aria-label="AIOS command line example">
-        <div class="cli-window__bar">
-          <span class="dot red" aria-hidden="true"></span>
-          <span class="dot yellow" aria-hidden="true"></span>
-          <span class="dot green" aria-hidden="true"></span>
-          <span class="cli-window__title">bash — aios</span>
+      <div class="cli-window reveal" role="img" aria-label="AIOS command line example" style="background: var(--bg-primary); border: 1px solid var(--border-default); box-shadow: 20px 20px 0px rgba(0,0,0,0.5);">
+        <div class="cli-window__bar" style="border-bottom: 1px solid var(--border-default); background: var(--bg-elevated); padding: 0.75rem 1rem;">
+          <span class="cli-window__title" style="font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; display: block; text-align: center; width: 100%;">terminal — aios-repl</span>
         </div>
-        <pre class="cli-window__body"><span class="t-dim"># scaffold a workspace with your model of choice</span>
-<span class="t-prompt">$ <span class="t-cmd">aios deploy --preset claude</span></span>
-<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> docker environment ready</span>
-<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> 6 agents online · MCP servers linked</span>
-
-<span class="t-dim"># hand a goal to the Fleet Director</span>
-<span class="t-prompt">$ <span class="t-cmd">aios run "add OAuth login"</span></span>
-<span class="t-info"><svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg> Architect → plan</span>
-<span class="t-info"><svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg> CodeSmith → 4 files</span>
-<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> Sentinel → review passed · 0 issues</span>
-<span class="t-prompt">aios <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cmd">done — committed to git</span></pre>
-        <div class="cli-window__actions">
-          <div class="code-copy">
-            <code>$ aios deploy --preset claude</code>
-            <button class="copy-btn" type="button" data-copy="$ aios deploy --preset claude" aria-label="Copy command">
-              <svg class="ico" aria-hidden="true"><use href="#i-copy" /></svg>
-              <span class="copy-btn__label">Copy</span>
+        <pre class="cli-window__body" id="animated-cli" style="font-family: var(--font-mono); padding: 1.5rem; line-height: 1.6; min-height: 480px; overflow-x: hidden;"><span class="t-cursor"></span></pre>
+        <div class="cli-window__actions" style="border-top: 1px solid var(--border-default); padding: 1rem; background: var(--bg-elevated);">
+          <div class="code-copy" style="background: var(--bg-input); border: 1px solid var(--border-default);">
+            <code style="font-family: var(--font-mono);">$ npm install -g aios</code>
+            <button class="copy-btn" type="button" data-copy="npm install -g aios" aria-label="Copy command" style="background: var(--bg-hover); border-left: 1px solid var(--border-default);">
+              <svg class="ico" aria-hidden="true" style="color: var(--text-primary);"><use href="#i-copy" /></svg>
+              <span class="copy-btn__label" style="font-family: var(--font-mono); text-transform: uppercase; font-size: 10px;">Copy</span>
             </button>
           </div>
         </div>
@@ -462,110 +504,62 @@
     </section>
 
     <!-- Features -->
-    <section id="features" class="section reveal" aria-labelledby="features-title">
-      <header class="section__head reveal">
-        <span class="eyebrow">Core capabilities</span>
-        <h2 id="features-title" class="section__title">Built for how AI <em>actually</em> builds software</h2>
-        <p class="section__sub">Every surface is agent-addressable. Every action is reviewable. Every decision is traceable.</p>
-      </header>
+    <section id="features" class="section reveal" aria-labelledby="features-title" style="padding: 6rem 0; background: var(--bg-primary);">
+      <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+        <header class="section__head reveal" style="text-align: left; margin-bottom: 3rem;">
+          <div class="badge" style="margin-bottom: 1rem;">WHAT'S INSIDE</div>
+          <h2 id="features-title" class="section__title" style="font-weight: 800; font-size: var(--text-3xl); letter-spacing: -0.02em;">Everything the agents need to build.</h2>
+          <p class="section__sub" style="font-size: var(--text-lg); color: var(--text-secondary); max-width: 600px; margin: 0;">A complete toolkit that lets AI work on real codebases — safely, and with you in charge.</p>
+        </header>
 
-      <div class="features">
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-brain" /></svg></div>
-          <h3>Multi-model orchestration</h3>
-          <p>Claude, GPT-4, local models — routed automatically by task. No API keys in code. Agent-specific model selection per step.</p>
-        </article>
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-workflow" /></svg></div>
-          <h3>Visual workflow engine</h3>
-          <p>Drag-and-drop DAGs for agent pipelines. Parallel execution, conditional branching, human-in-the-loop gates, rollback points.</p>
-        </article>
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-folder" /></svg></div>
-          <h3>Persistent project memory</h3>
-          <p>Vector-indexed codebase, decisions, and docs. Agents retrieve context instantly — no re-reading files every turn.</p>
-        </article>
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-terminal" /></svg></div>
-          <h3>Native terminal integration</h3>
-          <p>Isolated Docker terminals per agent. Real-time stdout/stderr streaming. Shell, git, test runners — all agent-controllable.</p>
-        </article>
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-shield" /></svg></div>
-          <h3>Security by default</h3>
-          <p>Local-first, zero telemetry. Secrets never leave your machine. Sandboxed execution with capability-based permissions.</p>
-        </article>
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-git-branch" /></svg></div>
-          <h3>Git-native collaboration</h3>
-          <p>Every agent action is a commit. PRs auto-generated with summaries. Review, merge, revert — standard git workflow.</p>
-        </article>
-      </div>
-    </section>
-
-    <!-- Workspaces -->
-    <section id="workspaces" class="section reveal" aria-labelledby="workspaces-title">
-      <header class="section__head reveal">
-        <span class="eyebrow">Workspaces</span>
-        <h2 id="workspaces-title" class="section__title">Isolated environments, <em>one command</em></h2>
-        <p class="section__sub">Spin up project-scoped workspaces with pre-configured agents, tools, and context. Share via reproducible config.</p>
-      </header>
-
-      <div class="features">
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-cpu" /></svg></div>
-          <h3>Preset templates</h3>
-          <p>Web, CLI, API, ML, mobile — one flag scaffolds the full agent team, docker config, and task queue.</p>
-        </article>
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-database" /></svg></div>
-          <h3>Shared context layer</h3>
-          <p>Workspaces share a project memory index. Agents across sessions pick up where others left off.</p>
-        </article>
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-globe" /></svg></div>
-          <h3>Portable configuration</h3>
-          <p>Export workspace as <code>aios.yaml</code> — version it, share it, CI it. Reproduce environments identically.</p>
-        </article>
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-command" /></svg></div>
-          <h3>MCP tool servers</h3>
-          <p>Connect external Model Context Protocol servers — browsers, databases, deploy hooks. Zero new dependencies, no recompile.</p>
-        </article>
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-bot" /></svg></div>
-          <h3>Editable Agent Roster</h3>
-          <p>Set each agent's provider and model from one picker. Choices persist across updates and drive Fleet runs.</p>
-        </article>
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-sparkles" /></svg></div>
-          <h3>Agent Canvas &amp; Fleet</h3>
-          <p>A background Director decomposes your goal and routes each step to the right specialist — Architect, CodeSmith, Sentinel, TestRunner.</p>
-        </article>
-        <article class="feature">
-          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-terminal" /></svg></div>
-          <h3>Command-line first</h3>
-          <p>Drive everything from the terminal — <code>aios deploy</code>, <code>aios run "task"</code>, <code>aios agents</code>. The same commands power CI, scripts, and the desktop app.</p>
-        </article>
-      </div>
-
-      <div class="cta glass reveal">
-        <div class="cta__content">
-          <span class="eyebrow" style="color: var(--accent-primary)">Try it now</span>
-          <h3 style="font-size: var(--text-2xl); font-weight: var(--font-extrabold); margin: var(--space-2) 0; color: var(--text-primary);">Deploy a workspace in seconds</h3>
-          <p style="color: var(--text-tertiary); margin-bottom: var(--space-4);">One command. Isolated Docker environment. Full agent team ready.</p>
-          <div class="code-copy">
-            <code>$ aios deploy --preset claude</code>
-            <button class="copy-btn" type="button" data-copy="$ aios deploy --preset claude" aria-label="Copy command">
-              <svg class="ico" aria-hidden="true"><use href="#i-copy" /></svg>
-              <span class="copy-btn__label">Copy</span>
-            </button>
-          </div>
+        <div class="features" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1px; background: var(--border-default); border: 1px solid var(--border-default);">
+          <article class="feature" style="background: var(--bg-primary); padding: 2rem;">
+            <div class="feature__icon" style="color: var(--accent-primary); margin-bottom: 1rem;"><svg class="ico" style="width:24px;height:24px" aria-hidden="true"><use href="#i-brain" /></svg></div>
+            <h3 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary);">Multi-Agent Fleet Director</h3>
+            <p style="color: var(--text-secondary); line-height: 1.5;">Automated workflow decomposition. Tasks are delegated to specialized built-in agents: Architect, CodeSmith, Sentinel, TestRunner, and DeployBot.</p>
+          </article>
+          <article class="feature" style="background: var(--bg-primary); padding: 2rem;">
+            <div class="feature__icon" style="color: var(--accent-primary); margin-bottom: 1rem;"><svg class="ico" style="width:24px;height:24px" aria-hidden="true"><use href="#i-workflow" /></svg></div>
+            <h3 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary);">Model Context Protocol (MCP)</h3>
+            <p style="color: var(--text-secondary); line-height: 1.5;">Full integration with external MCP servers. Cache their schemas and seamlessly execute tools alongside AIOS's built-in toolkit.</p>
+          </article>
+          <article class="feature" style="background: var(--bg-primary); padding: 2rem;">
+            <div class="feature__icon" style="color: var(--accent-primary); margin-bottom: 1rem;"><svg class="ico" style="width:24px;height:24px" aria-hidden="true"><use href="#i-folder" /></svg></div>
+            <h3 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary);">BYOK Architecture</h3>
+            <p style="color: var(--text-secondary); line-height: 1.5;">Bring your own API keys for Anthropic, OpenAI, or run completely offline with Ollama and OpenAI-compatible endpoints.</p>
+          </article>
+          <article class="feature" style="background: var(--bg-primary); padding: 2rem;">
+            <div class="feature__icon" style="color: var(--accent-primary); margin-bottom: 1rem;"><svg class="ico" style="width:24px;height:24px" aria-hidden="true"><use href="#i-terminal" /></svg></div>
+            <h3 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary);">Native Tool Calling</h3>
+            <p style="color: var(--text-secondary); line-height: 1.5;">12 core system tools out of the box including read/write/patch files, directory listing, code searching, and command execution.</p>
+          </article>
+          <article class="feature" style="background: var(--bg-primary); padding: 2rem;">
+            <div class="feature__icon" style="color: var(--accent-primary); margin-bottom: 1rem;"><svg class="ico" style="width:24px;height:24px" aria-hidden="true"><use href="#i-shield" /></svg></div>
+            <h3 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary);">Plan-Before-Act & Verify</h3>
+            <p style="color: var(--text-secondary); line-height: 1.5;">Agents draft implementation plans for your approval before mutating files, and automatically self-verify their code by running tests.</p>
+          </article>
+          <article class="feature" style="background: var(--bg-primary); padding: 2rem;">
+            <div class="feature__icon" style="color: var(--accent-primary); margin-bottom: 1rem;"><svg class="ico" style="width:24px;height:24px" aria-hidden="true"><use href="#i-git-branch" /></svg></div>
+            <h3 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary);">Clean Git History</h3>
+            <p style="color: var(--text-secondary); line-height: 1.5;">Every change is a normal git commit. Review it like a pull request, then merge.</p>
+          </article>
         </div>
-        <a class="btn btn--primary" href="#download">
-          <span>Download AIOS</span>
-          <svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg>
-        </a>
+
+        <div class="cta reveal" style="margin-top: 4rem; padding: 3rem; border: 1px solid var(--border-default); background: var(--bg-secondary); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 2rem;">
+          <div class="cta__content" style="flex: 1; min-width: 300px;">
+            <div class="badge" style="margin-bottom: 1rem;">TRY IT NOW</div>
+            <h3 style="font-size: var(--text-2xl); font-weight: 800; margin: 0 0 1rem; color: var(--text-primary); letter-spacing: -0.02em;">Start your first workspace.</h3>
+            <div class="code-copy" style="background: var(--bg-primary); border: 1px solid var(--border-default); max-width: 400px;">
+              <code style="font-family: var(--font-mono);">$ aios deploy --preset claude</code>
+              <button class="copy-btn" type="button" data-copy="$ aios deploy --preset claude" aria-label="Copy command" style="background: var(--bg-hover); border-left: 1px solid var(--border-default);">
+                <svg class="ico" aria-hidden="true" style="color: var(--text-primary);"><use href="#i-copy" /></svg>
+              </button>
+            </div>
+          </div>
+          <a class="btn-chamfer" href="#download">
+            <span>Download AIOS</span>
+          </a>
+        </div>
       </div>
     </section>
 
@@ -574,7 +568,7 @@
       <header class="section__head reveal" style="max-width: 600px; margin-bottom: var(--space-8);">
         <span class="eyebrow">Get started</span>
         <h2 id="download-title" class="section__title">Download AIOS for Windows</h2>
-        <p class="section__sub">Native desktop app. No browser dependencies. Automatic updates. One installer.</p>
+        <p class="section__sub">A single installer. Runs on your desktop, updates itself, and needs no browser or account.</p>
       </header>
 
       <div class="download__card glass reveal">
@@ -583,11 +577,11 @@
             <img src="assets/favicon.svg" alt="" width="64" height="64" />
           </span>
           <div>
-            <h3 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0;">AIOS Setup 1.2.5</h3>
+            <h3 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0;">AIOS Setup 1.3.3</h3>
             <p style="font-size: var(--text-sm); color: var(--text-tertiary); margin: var(--space-1) 0 0;">Windows 10/11 — Signed · Auto-updating</p>
           </div>
         </div>
-        <a class="btn btn--primary btn--lg" href="/downloads/AIOS%20Setup%201.2.5.exe" download style="width: 100%; max-width: 320px; justify-content: center;">
+        <a class="btn btn--primary btn--lg" href="/downloads/AIOS%20Setup%201.3.3.exe" download style="width: 100%; max-width: 320px; justify-content: center;">
           <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
           <span>Download Installer</span>
         </a>
@@ -604,6 +598,69 @@
       </header>
 
       <div class="changelog glass reveal">
+        <article class="changelog__entry">
+          <div class="changelog__ver">1.3.3</div>
+          <div class="changelog__body">
+            <h3>Minimalist Branding &amp; Polish Overhaul</h3>
+            <ul class="changelog__list">
+              <li><strong>Signature Geometric Logo:</strong> Standardized the new brutalist geometric logo across all channels (desktop client, CLI banner, favicons).</li>
+              <li><strong>CLI Diagnostic Startup:</strong> Added real hardware scanning (CPU/RAM detection) and diagnostic logs on startup to mimic rig.ai styling.</li>
+              <li><strong>Design Uniformity:</strong> Simplified primary gradients in the default Slate theme to flat, minimalistic accent colors to match the landing page.</li>
+              <li><strong>No-Fake Guarantee:</strong> Cleaned up CLI subcommands and workspaces mockup code inputs to reflect real execution patterns.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="changelog__entry">
+          <div class="changelog__ver">1.3.2</div>
+          <div class="changelog__body">
+            <h3>Interactive Code Canvas, Visual Fleet &amp; Mini-Browser</h3>
+            <ul class="changelog__list">
+              <li><strong>Interactive Canvas:</strong> Clickable diff badges now instantly open proposed file changes side-by-side in the Code Canvas. Heads-up diff reviews are pre-calculated for all modification tools.</li>
+              <li><strong>Visual Fleet Pipelines:</strong> Headless fleet executions are now mapped directly to the visual canvas and interactive tool executors, allowing live code updates while agent roster tasks run.</li>
+              <li><strong>Mini-Browser Live Preview:</strong> Added multi-tab support, back/forward controls, enter-to-navigate URL fields, and native project ZIP exports. Resolved fullscreen toggling with customizable device-width hover corner overlays.</li>
+              <li><strong>Reliable Auto-Updates:</strong> Fixed installer relaunch conflicts, bringing back the interactive NSIS installer wizard to prevent app crashes on update.</li>
+              <li><strong>Dynamic Secret Key Hydration:</strong> Added asynchronous fallbacks and store subscription listeners to automatically sync custom keys (Gemini, Groq, OpenRouter) and prevent voice-transcription key resolution race conditions.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="changelog__entry">
+          <div class="changelog__ver">1.2.8</div>
+          <div class="changelog__body">
+            <h3>Incremental Writes, System Attachments &amp; clean UI</h3>
+            <ul class="changelog__list">
+              <li><strong>Incremental building.</strong> Implemented <code>patch_file</code> and <code>append_file</code> tool calls in the desktop app. Enables agents to build large files step-by-step instead of doing huge rewrites, eliminating completion truncation issues.</li>
+              <li><strong>Any-file attachments.</strong> Added support for attaching any local system file from the native chooser dialog (not just workspace files). Fully reads external contents into the agent's context.</li>
+              <li><strong>Voice and UX Polish.</strong> Relocated the Speech Read Aloud button underneath specific agent responses with faster playback rate. Wrapped speech calls in handlers to prevent renderer freezes. Removed the top header bar from the fleet chat canvas for a cleaner, spacious editor view.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="changelog__entry">
+          <div class="changelog__ver">1.2.7</div>
+          <div class="changelog__body">
+            <h3>AI Speech Controls, Prompt Polish &amp; UI UX Polish</h3>
+            <ul class="changelog__list">
+              <li><strong>AI Prompt Polish.</strong> Added a Sparkles prompt optimization button next to the composer inputs. Uses the background LLM to automatically fix speech-to-text grammar, repair typos, and restate prompts cleanly.</li>
+              <li><strong>Speech-to-Text &amp; Read Aloud.</strong> Implemented Speech Recognition on the microphone button (flashes red when active) and Text-to-Speech synthesis on the audio waveform button (pulses blue when active) to read responses.</li>
+              <li><strong>UX Refinements.</strong> Cleaned the Left Rail sidebar by removing duplicate tabs, removing the profile footer, and adding dynamic collapse layouts (hiding search, icon-only new chat/updater). Added dismiss 'X' to context limit warning. Fixed terminal scroll wrap.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="changelog__entry">
+          <div class="changelog__ver">1.2.6</div>
+          <div class="changelog__body">
+            <h3>Premium Claude-like UI, PDF Cards &amp; Context limits</h3>
+            <ul class="changelog__list">
+              <li><strong>Claude-like reskin.</strong> Entirely redesigned Left Rail with segmented Navigation Tabs, New Chat button, flat Pinned/Recents global sections, Relaunch Check card, and Danish Profile card.</li>
+              <li><strong>Interactive PDF widgets.</strong> Attached PDF documents are parsed and displayed as beautiful document cards with a native 'Download and open' button running on the OS viewer.</li>
+              <li><strong>Pill input composer.</strong> Reshaped prompt textarea with integrated Model Pill selector, mic/waveform speech controls, and a dedicated active attachment row.</li>
+            </ul>
+          </div>
+        </article>
+
         <article class="changelog__entry">
           <div class="changelog__ver">1.2.5</div>
           <div class="changelog__body">
@@ -636,7 +693,7 @@
             <ul class="changelog__list">
               <li><strong>Run with Fleet.</strong> A toggle in the Agents composer. The background Director decomposes your goal and routes each step to the right specialist — Architect plans, CodeSmith builds, Sentinel reviews, TestRunner tests, DeployBot ships.</li>
               <li><strong>Shared + prior-agent context.</strong> Every agent in a run receives the same project brief and memory, plus the output of the agents before it, so the fleet builds on each other's work instead of working in silos.</li>
-              <li><strong>Offline by default.</strong> Routing is a deterministic intent classifier — no API key required. An optional LLM planning pass uses your active session's model when a key is present.</li>
+              <li><strong>Offline mode & BYOK.</strong> Native routing is deterministic and runs offline. The core AI loop is powered by Bring Your Own Key (BYOK) architecture, giving you total control over the APIs you call while ensuring your code never touches our servers.</li>
               <li><strong>Editable Agent Roster.</strong> In Account ? Agent Roster, set each agent's provider and model from the same picker as the composer. Choices persist across updates.</li>
             </ul>
           </div>
@@ -667,24 +724,7 @@
       </div>
     </section>
 
-    <!-- Testimonial -->
-    <section class="section reveal" aria-labelledby="love-title">
-      <div class="testimonial glass reveal">
-        <svg class="testimonial__quote" aria-hidden="true"><use href="#i-quote" /></svg>
-        <blockquote class="testimonial__text">
-          “AIOS replaced three separate tools in our stack. The agents actually review each other's
-          code, and the git-native workflow means nothing slips through unreviewed. It feels less
-          like a chatbot and more like a junior team that never sleeps?
-        </blockquote>
-        <div class="testimonial__author">
-          <span class="testimonial__avatar" aria-hidden="true">DK</span>
-          <div>
-            <span class="testimonial__name">Danish Malik</span>
-            <span class="testimonial__role">Founder, Netizen Labs</span>
-          </div>
-        </div>
-      </div>
-    </section>
+
 
     <!-- FAQ -->
     <section id="faq" class="section reveal" aria-labelledby="faq-title">
@@ -724,7 +764,7 @@
 
     <!-- Footer -->
     <footer class="footer" role="contentinfo">
-      <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-6); margin-bottom: var(--space-4);">
+      <div class="footer__links">
         <a href="privacy.html" class="footer__link">Privacy Policy</a>
         <a href="mailto:hello@aios.app" class="footer__link">Contact</a>
           <a href="https://github.com/danishmalik2011-netizen/AIOS.git" target="_blank" rel="noopener" class="footer__link">
@@ -746,6 +786,146 @@
   </button>
 
   <script src="js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const cliContainer = document.getElementById('animated-cli');
+      if (!cliContainer) return;
+
+      const BLOCK = {
+        A: [
+          ' ▄▄▄▄▄ ',
+          '██   ██',
+          '██   ██',
+          '███████',
+          '██   ██',
+          '██   ██',
+          '▀▀   ▀▀',
+        ],
+        I: [
+          '███████',
+          '  ███  ',
+          '  ███  ',
+          '  ███  ',
+          '  ███  ',
+          '  ███  ',
+          '▀▀▀▀▀▀▀',
+        ],
+        O: [
+          ' ▄▄▄▄▄ ',
+          '██   ██',
+          '██   ██',
+          '██   ██',
+          '██   ██',
+          '██   ██',
+          ' ▀▀▀▀▀ ',
+        ],
+        S: [
+          ' ▄▄▄▄▄▄',
+          '██     ',
+          '██▄▄▄▄ ',
+          ' ▀▀▀▀██',
+          '     ██',
+          '▄▄▄▄▄██',
+          '▀▀▀▀▀▀ ',
+        ],
+      };
+
+      const LOGO_ROWS = [
+        ' ▄▄▄▄▄▄▄▄ ',
+        '██      ██',
+        '██ ▄▄▄▄ ██',
+        '██ ████ ██',
+        '██ ▀▀▀▀ ██',
+        '██      ██',
+        ' ▀▀▀▀▀▀▀▀ ',
+      ];
+
+      const letters = ['A', 'I', 'O', 'S'];
+      const bannerLines = [];
+      for (let r = 0; r < 7; r++) {
+        const logoCol = LOGO_ROWS[r];
+        const titleCol = letters.map(l => BLOCK[l][r]).join('  ');
+        const coloredLogo = logoCol.replace(/[▄▀█]/g, m => `<span style="color: var(--accent-primary);">${m}</span>`);
+        const coloredTitle = titleCol.replace(/[▄▀█]/g, m => `<span style="color: var(--text-primary); font-weight: bold;">${m}</span>`);
+        bannerLines.push(`  ${coloredLogo}    ${coloredTitle}`);
+      }
+      
+      const lines = [
+        { html: '<span style="color: var(--accent-primary);">$</span> ', text: 'npm install -g aios', delay: 800, type: 'typing' },
+        { html: '<span style="color: var(--text-muted);">+ aios@1.3.3 added 12 packages in 1.4s</span>', delay: 1000, type: 'html' },
+        { html: '', delay: 500, type: 'html' },
+        { html: '<span style="color: var(--accent-primary);">$</span> ', text: 'aios', delay: 1000, type: 'typing' },
+        { html: '', delay: 500, type: 'html' },
+        { html: bannerLines[0], delay: 50, type: 'html' },
+        { html: bannerLines[1], delay: 50, type: 'html' },
+        { html: bannerLines[2], delay: 50, type: 'html' },
+        { html: bannerLines[3], delay: 50, type: 'html' },
+        { html: bannerLines[4], delay: 50, type: 'html' },
+        { html: bannerLines[5], delay: 50, type: 'html' },
+        { html: bannerLines[6], delay: 50, type: 'html' },
+        { html: '', delay: 150, type: 'html' },
+        { html: '<span style="color: var(--text-secondary);">  agentic command line  v1.3.3</span>', delay: 100, type: 'html' },
+        { html: '<span style="color: var(--text-muted);">  ──────────────────────────────────────────────────────</span>', delay: 100, type: 'html' },
+        { html: '', delay: 400, type: 'html' },
+        { html: '<span style="color: var(--status-success);">✓</span> <span style="color: var(--text-secondary);">Core services initialized.</span>', delay: 300, type: 'html' },
+        { html: '<span style="color: var(--status-success);">✓</span> <span style="color: var(--text-secondary);">Workspace mapped to: ./current-project</span>', delay: 300, type: 'html' },
+        { html: '<span style="color: var(--status-success);">✓</span> <span style="color: var(--text-secondary);">Loaded BYOK profiles.</span>', delay: 300, type: 'html' },
+        { html: '', delay: 400, type: 'html' },
+        { html: '<span style="color: var(--accent-primary); font-weight: bold;">aios-repl ></span> ', text: 'build a contact form component in react', delay: 1500, type: 'typing' },
+        { html: '<span style="color: #8b5cf6;">[Director]</span> <span style="color: var(--text-secondary);">Planning task...</span>', delay: 800, type: 'html' },
+        { html: '<span style="color: #8b5cf6;">[CodeSmith]</span> <span style="color: var(--text-secondary);">Writing ContactForm.tsx</span>', delay: 1000, type: 'html' },
+        { html: '<span style="color: #8b5cf6;">[Sentinel]</span> <span style="color: var(--text-secondary);">Reviewing syntax and imports...</span>', delay: 1200, type: 'html' },
+        { html: '<span style="color: var(--status-success);">✓ Task completed in 4.2s</span>', delay: 500, type: 'html' },
+        { html: '', delay: 300, type: 'html' },
+        { html: '<span style="color: var(--accent-primary); font-weight: bold;">aios-repl ></span> ', text: '', delay: 9999999, type: 'typing' },
+      ];
+      
+      const cursor = document.createElement('span');
+      cursor.className = 't-cursor';
+      let hasPlayed = false;
+      
+      async function playAnimation() {
+        if (hasPlayed) return;
+        hasPlayed = true;
+        cliContainer.innerHTML = '';
+        
+        for(let i=0; i<lines.length; i++) {
+          const line = lines[i];
+          const lineDiv = document.createElement('div');
+          cliContainer.appendChild(lineDiv);
+          
+          if (line.type === 'html') {
+            lineDiv.innerHTML = line.html;
+            await new Promise(r => setTimeout(r, line.delay));
+          } else if (line.type === 'typing') {
+            lineDiv.innerHTML = line.html;
+            lineDiv.appendChild(cursor);
+            if (line.text) {
+               for(let j=0; j<line.text.length; j++) {
+                 const textNode = document.createTextNode(line.text[j]);
+                 lineDiv.insertBefore(textNode, cursor);
+                 await new Promise(r => setTimeout(r, 40 + Math.random() * 40));
+               }
+            }
+            await new Promise(r => setTimeout(r, line.delay));
+            if (i !== lines.length - 1) {
+               cursor.remove();
+            }
+          }
+        }
+      }
+      
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            playAnimation();
+          }
+        });
+      }, { threshold: 0.25 });
+      
+      observer.observe(cliContainer);
+    });
+  </script>
 </body>
 </html>
 

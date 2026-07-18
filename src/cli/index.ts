@@ -37,7 +37,7 @@ import {
 import type { ModalPage, ModalController, ModalItem, TurnSink } from './ui';
 import { PROVIDER_CATALOG, catalogById } from './providerCatalog';
 
-const VERSION = '1.2.4';
+const VERSION = '1.3.3';
 
 interface ParsedArgs {
   prompt: string;
