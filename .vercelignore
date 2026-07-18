@@ -1,0 +1,7 @@
+# Exclude heavy / non-web files from the Vercel web deployment
+node_modules
+dist-electron
+release
+src
+electron
+scripts

@@ -1,0 +1,8 @@
+{
+  "buildCommand": "echo 'Static site - no build needed'",
+  "outputDirectory": "landing",
+  "framework": null,
+  "rewrites": [
+    { "source": "/privacy", "destination": "/privacy.html" }
+  ]
+}
