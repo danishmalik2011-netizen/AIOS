@@ -143,7 +143,12 @@ export async function runAgentTurn(
     const assistantMsg = {
       role: 'assistant' as const,
       content: result.content || '',
-      toolCalls: result.toolCalls,
+      toolCalls: (result.toolCalls ?? []).map((tc) => ({
+        id: tc.id,
+        name: tc.name,
+        arguments: tc.arguments,
+        status: 'success' as const,
+      })),
     };
     messages.push(assistantMsg);
     history.push({

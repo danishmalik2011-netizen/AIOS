@@ -18,7 +18,7 @@ export interface ExecutorOptions {
   /** Ask (prompt) before mutating tools instead of auto-allowing. */
   prompt?: (label: string) => Promise<boolean>;
   /** Log a tool action for the TUI. */
-  onTool?: (name: string, detail: string) => void;
+  onTool?: (name: string, detail: string, extra?: unknown) => void;
 }
 
 class ToolRejectedError extends Error {}
@@ -43,7 +43,7 @@ export function createExecutor(opts: ExecutorOptions) {
       : nodePath.resolve(currentDir, rel);
   };
 
-  return async function executeTool(
+  const executeTool = async function executeTool(
     name: string,
     args: Record<string, unknown>,
   ): Promise<string> {

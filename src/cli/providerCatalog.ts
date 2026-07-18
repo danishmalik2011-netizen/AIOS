@@ -217,10 +217,10 @@ export function catalogSort(
   by: 'popularity' | 'name' | 'cost' = 'popularity',
 ): CatalogProvider[] {
   return [...list].sort((a, b) => {
-    if (by === 'popularity') return b.popularity - a.popularity;
+    if (by === 'popularity') return (b.popularity ?? 0) - (a.popularity ?? 0);
     if (by === 'name')       return a.name.localeCompare(b.name);
     // cost: free < low < medium < high
     const rank = { free: 0, low: 1, medium: 2, high: 3 };
-    return (rank[a.costTier] ?? 2) - (rank[b.costTier] ?? 2);
+    return (rank[a.costTier ?? 'medium'] ?? 2) - (rank[b.costTier ?? 'medium'] ?? 2);
   });
 }
