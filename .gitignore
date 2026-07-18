@@ -8,10 +8,22 @@ scratch/
 .DS_Store
 
 # Build/deploy artifacts (installers mirrored to Vercel landing, not source)
-landing/downloads/*.exe
-landing/downloads/*.blockmap
+# NOTE: landing/downloads/*.exe and *.blockmap are now tracked so they deploy to Vercel.
+
+# --- TypeScript / Vite build artifacts (NOT source, never commit) ---
+tsc-*.txt
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# Electron app's Vite entry HTML (belongs to the app build, not the website).
+# The website lives in landing/; this root index.html is the Electron renderer entry.
+/index.html
+/vite-env.d.ts
 
 # Stray logs
 *.log
 _tc_renderer.txt
 tc_renderer.log
+
+.vercel
+.env*

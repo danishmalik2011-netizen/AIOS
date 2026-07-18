@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "cli": "node scripts/build-cli.cjs",
     "build:cli": "node scripts/build-cli.cjs",
-    "prepare": "node scripts/prepare-cli.cjs",
+    "prepare": "node scripts/prepare-cli.cjs || true",
     "dist": "npm run build && electron-builder"
   },
   "dependencies": {
@@ -24,13 +24,15 @@
     "@xyflow/react": "^12.6.0",
     "electron-updater": "^6.8.9",
     "lucide-react": "^0.500.0",
-    "node-pty": "^1.1.0-beta34",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.0",
     "recharts": "^2.15.0",
     "simple-git": "^3.27.0",
     "zustand": "^5.0.5"
+  },
+  "optionalDependencies": {
+    "node-pty": "^1.1.0-beta34"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.7.0",

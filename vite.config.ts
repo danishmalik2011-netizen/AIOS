@@ -4,11 +4,14 @@ import react from '@vitejs/plugin-react';
 import electron from 'vite-plugin-electron/simple';
 import path from 'path';
 
-export default defineConfig({
-  base: './',
-  plugins: [
-    react(),
-    electron({
+// On Vercel we only build the web SPA — skip the Electron main/preload
+// plugins (they require native modules / the electron binary which are
+// unavailable in the Vercel build environment).
+const isVercel = !!process.env.VERCEL || !!process.env.SKIP_ELECTRON;
+
+const electronPlugin = isVercel
+  ? []
+  : electron({
       main: {
         entry: ['electron/main.ts', 'electron/pty-worker.ts'],
         vite: {
@@ -40,7 +43,13 @@ export default defineConfig({
         },
       },
       renderer: {},
-    }),
+    });
+
+export default defineConfig({
+  base: './',
+  plugins: [
+    react(),
+    electronPlugin,
   ],
   resolve: {
     alias: {

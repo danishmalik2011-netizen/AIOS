@@ -6,6 +6,48 @@ AIOS is designed as the next generation beyond Cursor, VS Code, Claude Code, and
 
 ---
 
+## 📁 Repository Structure & Deployment (READ THIS)
+
+This is a **MIXED repo**. It contains two completely separate things that must
+NEVER be confused with each other:
+
+| Path | What it is | Deploys to Vercel? |
+| --- | --- | --- |
+| `src/`, `electron/`, `dist*/`, `dist-cli/`, `release/`, `vite.config.ts`, `tsconfig*.json`, root `package.json`, root `index.html` | **The Electron desktop app + headless CLI** (source code, NOT a website) | ❌ **NEVER** |
+| `landing/` | **The marketing website** (static HTML/CSS/JS + the Windows installer in `landing/downloads/`) | ✅ **YES — this is the only thing Vercel serves** |
+
+### How Vercel knows what to deploy
+- Root `vercel.json` sets `"outputDirectory": "landing"`.
+- Root `.vercelignore` is a hard guard: it ignores `*` and only allows `landing/**`,
+  so even if config changes, the Electron app can never leak into a Vercel deploy.
+- `landing/` has **no** `vercel.json` / `package.json` of its own — the root ones are the single source of truth.
+
+### Deploying the website (the normal flow)
+```bash
+git add -A
+git commit -m "update site"
+git push        # Vercel auto-deploys landing/ → https://aiosapp.vercel.app
+```
+> The website is plain static files. There is **no build step** for it.
+
+### Building / releasing the desktop app (does NOT touch Vercel)
+```bash
+npm install
+npm run dist    # electron-builder → release/ (installers)
+# Then copy the new installer into landing/downloads/ and update landing/downloads/latest.yml
+git add landing/downloads/
+git commit && git push   # only THEN does Vercel serve the new installer
+```
+
+### ⚠️ Golden rules
+1. **Vercel = website only.** Never point Vercel at the repo root expecting the app.
+2. **The `.exe` lives in `landing/downloads/` and is committed to git** so it deploys.
+   Don't gitignore it.
+3. **Root `index.html` / `vite-env.d.ts` / `tsc-*.txt` / `tsconfig.tsbuildinfo` are
+   Electron build artifacts** — they are gitignored and must stay out of the website.
+
+---
+
 ## ✨ Feature Overview
 
 | Domain | Capability |

@@ -1,7 +1,20 @@
-# Exclude heavy / non-web files from the Vercel web deployment
-node_modules
-dist-electron
-release
-src
-electron
-scripts
+# ============================================================
+# Vercel deployment guard for AIOS
+# ------------------------------------------------------------
+# This repo is a MIXED repo: it contains BOTH
+#   1. the Electron desktop app  (src/, electron/, vite.config.ts, ...)
+#   2. the marketing website      (landing/)
+#
+# Vercel MUST ONLY deploy the website (landing/).
+# The root vercel.json sets outputDirectory: "landing".
+# This file is a SECOND LAYER OF DEFENSE: it blocks every
+# non-website path from ever reaching the Vercel build/output,
+# so the Electron app can NEVER accidentally get deployed.
+# ============================================================
+
+# --- Block the entire Electron app + tooling ---
+*
+!landing
+
+# Allow only the website directory and its contents
+!landing/**
