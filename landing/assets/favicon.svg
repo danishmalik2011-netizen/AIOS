@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <style>
+    .brand-stroke {
+      stroke: #000000;
+    }
+    .brand-fill {
+      fill: #000000;
+    }
+    @media (prefers-color-scheme: dark) {
+      .brand-stroke {
+        stroke: #ffffff;
+      }
+      .brand-fill {
+        fill: #ffffff;
+      }
+    }
+    @keyframes logo-rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .rotator {
+      transform-origin: 100px 100px;
+      animation: logo-rotate 25s linear infinite;
+    }
+  </style>
+
+  <!-- Static Center Core -->
+  <circle cx="100" cy="100" r="28" fill="none" class="brand-stroke" stroke-width="2.5" />
+  <circle cx="100" cy="100" r="34" fill="none" class="brand-stroke" stroke-width="1.5" />
+  <text x="100" y="106" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" font-size="17" class="brand-fill" text-anchor="middle" letter-spacing="0.05em">AIOS</text>
+
+  <!-- Rotating Outer Tech Ring & Spokes -->
+  <g class="rotator brand-stroke">
+    <!-- Outer double rings -->
+    <circle cx="100" cy="100" r="62" fill="none" stroke-width="1.5" opacity="0.8" />
+    <circle cx="100" cy="100" r="68" fill="none" stroke-width="1" opacity="0.5" />
+
+    <!-- 8 Radial Spokes -->
+    <line x1="134" y1="100" x2="162" y2="100" stroke-width="1.5" />
+    <line x1="124.04" y1="124.04" x2="143.84" y2="143.84" stroke-width="1.5" />
+    <line x1="100" y1="134" x2="100" y2="162" stroke-width="1.5" />
+    <line x1="75.96" y1="124.04" x2="56.16" y2="143.84" stroke-width="1.5" />
+    <line x1="66" y1="100" x2="38" y2="100" stroke-width="1.5" />
+    <line x1="75.96" y1="75.96" x2="56.16" y2="56.16" stroke-width="1.5" />
+    <line x1="100" y1="66" x2="100" y2="38" stroke-width="1.5" />
+    <line x1="124.04" y1="75.96" x2="143.84" y2="56.16" stroke-width="1.5" />
+
+    <!-- 8 Outer Nodes (Circle + Dot) -->
+    <g transform="translate(165, 100)">
+      <circle cx="0" cy="0" r="8" fill="none" stroke-width="1.5" />
+      <circle cx="0" cy="0" r="3" class="brand-fill" />
+    </g>
+    <g transform="translate(145.96, 145.96)">
+      <circle cx="0" cy="0" r="8" fill="none" stroke-width="1.5" />
+      <circle cx="0" cy="0" r="3" class="brand-fill" />
+    </g>
+    <g transform="translate(100, 165)">
+      <circle cx="0" cy="0" r="8" fill="none" stroke-width="1.5" />
+      <circle cx="0" cy="0" r="3" class="brand-fill" />
+    </g>
+    <g transform="translate(54.04, 145.96)">
+      <circle cx="0" cy="0" r="8" fill="none" stroke-width="1.5" />
+      <circle cx="0" cy="0" r="3" class="brand-fill" />
+    </g>
+    <g transform="translate(35, 100)">
+      <circle cx="0" cy="0" r="8" fill="none" stroke-width="1.5" />
+      <circle cx="0" cy="0" r="3" class="brand-fill" />
+    </g>
+    <g transform="translate(54.04, 54.04)">
+      <circle cx="0" cy="0" r="8" fill="none" stroke-width="1.5" />
+      <circle cx="0" cy="0" r="3" class="brand-fill" />
+    </g>
+    <g transform="translate(100, 35)">
+      <circle cx="0" cy="0" r="8" fill="none" stroke-width="1.5" />
+      <circle cx="0" cy="0" r="3" class="brand-fill" />
+    </g>
+    <g transform="translate(145.96, 54.04)">
+      <circle cx="0" cy="0" r="8" fill="none" stroke-width="1.5" />
+      <circle cx="0" cy="0" r="3" class="brand-fill" />
+    </g>
+  </g>
+</svg>

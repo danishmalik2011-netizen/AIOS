@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
+  <script>document.documentElement.classList.add('js');</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="AIOS — the AI Agent Operating System. One command center for AI-assisted software creation. Download the desktop app." />
   <meta name="theme-color" content="#0d1018" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=1.0.3" />
-  <link rel="icon" type="image/x-icon" href="favicon.ico?v=1.0.3" />
-  <link rel="shortcut icon" type="image/x-icon" href="favicon.ico?v=1.0.3" />
-  <link rel="apple-touch-icon" href="logo.png?v=1.0.3" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=1.0.3" />
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=1.0.3" />
+  <link rel="shortcut icon" type="image/x-icon" href="assets/favicon.ico?v=1.0.3" />
+  <link rel="apple-touch-icon" href="assets/logo.png?v=1.0.3" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=1.0.3" />
+  <link rel="stylesheet" href="css/style.css?v=1.0.3" />
   <title>AIOS — AI Agent Operating System</title>
 </head>
 <body>
@@ -137,6 +138,18 @@
       <symbol id="i-github" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
       </symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="11" height="11" rx="2"/>
+        <path d="M5 15V5a2 2 0 0 1 2-2h10"/>
+      </symbol>
+      <symbol id="i-quote" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M7.5 6C5 6 3 8 3 10.5V18h7v-7H7c0-1.7 1.3-3 3-3V6H7.5zM17.5 6C15 6 13 8 13 10.5V18h7v-7h-3c0-1.7 1.3-3 3-3V6h-2.5z"/>
+      </symbol>
+      <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="16" rx="2"/>
+        <path d="M7 9l3 3-3 3"/>
+        <path d="M13 15h4"/>
+      </symbol>
     </defs>
   </svg>
 
@@ -234,7 +247,7 @@
           <a href="#workspaces">Workspaces</a>
           <a href="#changelog">What's New</a>
           <a href="#download">Download</a>
-          <a href="/privacy.html">Privacy Policy</a>
+          <a href="#">Privacy Policy</a>
         </div>
     </header>
 
@@ -259,7 +272,7 @@
         </p>
 
         <div class="hero__actions">
-          <a class="btn btn--primary btn--lg" href="downloads/AIOS%20Setup%201.2.5.exe" download>
+          <a class="btn btn--primary btn--lg" href="assets/downloads/AIOS%20Setup%201.2.4.exe" download>
             <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
             <span>Download for Windows</span>
             <svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg>
@@ -356,7 +369,7 @@
           <div class="mockup__view" role="tabpanel" id="view-workspaces" aria-labelledby="tab-workspaces" hidden>
             <div class="w-setup">
               <div class="w-input-row">
-                <span class="w-prompt">$ agy deploy --preset</span>
+                <span class="w-prompt">$ aios deploy --preset</span>
                 <span class="w-cmd-val">claude</span>
               </div>
               <button class="w-btn" type="button">Run Workspace</button>
@@ -368,16 +381,20 @@
           <div class="mockup__view" role="tabpanel" id="view-terminal" aria-labelledby="tab-terminal" hidden>
             <div class="t-grid">
               <div class="t-pane">
-                <div class="t-pane-hdr">claude 1</div>
-                <pre class="t-pane-body"><span class="t-dim">claude-code starting...</span>
-<span class="t-dim">Logged in as user</span>
-<span class="t-prompt">agy <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cmd">ready</span></pre>
+                <div class="t-pane-hdr">claude 1 — aios</div>
+                <pre class="t-pane-body"><span class="t-dim">$ aios deploy --preset claude</span>
+<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> scaffolding workspace…</span>
+<span class="t-dim">  docker · agents · mcp servers</span>
+<span class="t-info"><svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg> Fleet Director: 6 agents online</span>
+<span class="t-prompt">aios <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cmd">building feature/auth…</span></pre>
               </div>
               <div class="t-pane">
-                <div class="t-pane-hdr">claude 2</div>
-                <pre class="t-pane-body"><span class="t-dim">claude-code starting...</span>
-<span class="t-dim">Logged in as user</span>
-<span class="t-prompt">agy <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cmd">ready</span></pre>
+                <div class="t-pane-hdr">claude 2 — aios</div>
+                <pre class="t-pane-body"><span class="t-dim">$ aios run "add dark mode"</span>
+<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> Architect → plan ready</span>
+<span class="t-info"><svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg> CodeSmith → 3 files edited</span>
+<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> Sentinel → review passed</span>
+<span class="t-prompt">aios <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cmd">committing…</span></pre>
               </div>
             </div>
           </div>
@@ -389,20 +406,58 @@
     <section class="stats reveal" aria-labelledby="stats-title">
       <h2 id="stats-title" class="visually-hidden">Key Metrics</h2>
       <div class="stat glass">
-        <span class="stat__value">12+</span>
+        <span class="stat__value" data-count="12" data-suffix="+">12+</span>
         <span class="stat__label">Integrated surfaces</span>
       </div>
       <div class="stat glass">
-        <span class="stat__value">6</span>
+        <span class="stat__value" data-count="6">6</span>
         <span class="stat__label">Agent roles</span>
       </div>
       <div class="stat glass">
-        <span class="stat__value">100%</span>
+        <span class="stat__value" data-count="100" data-suffix="%">100%</span>
         <span class="stat__label">Local execution</span>
       </div>
       <div class="stat glass">
-        <span class="stat__value">0</span>
+        <span class="stat__value" data-count="0">0</span>
         <span class="stat__label">Telemetry</span>
+      </div>
+    </section>
+
+    <!-- CLI Showcase -->
+    <section class="section cli-showcase reveal" aria-labelledby="cli-title">
+      <header class="section__head reveal">
+        <span class="eyebrow">Command-line first</span>
+        <h2 id="cli-title" class="section__title">One command to spin up a whole <em>agent team</em></h2>
+        <p class="section__sub">AIOS is driven entirely from the terminal. The same commands run locally, in CI, or inside the desktop app.</p>
+      </header>
+
+      <div class="cli-window glass reveal" role="img" aria-label="AIOS command line example">
+        <div class="cli-window__bar">
+          <span class="dot red" aria-hidden="true"></span>
+          <span class="dot yellow" aria-hidden="true"></span>
+          <span class="dot green" aria-hidden="true"></span>
+          <span class="cli-window__title">bash — aios</span>
+        </div>
+        <pre class="cli-window__body"><span class="t-dim"># scaffold a workspace with your model of choice</span>
+<span class="t-prompt">$ <span class="t-cmd">aios deploy --preset claude</span></span>
+<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> docker environment ready</span>
+<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> 6 agents online · MCP servers linked</span>
+
+<span class="t-dim"># hand a goal to the Fleet Director</span>
+<span class="t-prompt">$ <span class="t-cmd">aios run "add OAuth login"</span></span>
+<span class="t-info"><svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg> Architect → plan</span>
+<span class="t-info"><svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg> CodeSmith → 4 files</span>
+<span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> Sentinel → review passed · 0 issues</span>
+<span class="t-prompt">aios <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cmd">done — committed to git</span></pre>
+        <div class="cli-window__actions">
+          <div class="code-copy">
+            <code>$ aios deploy --preset claude</code>
+            <button class="copy-btn" type="button" data-copy="$ aios deploy --preset claude" aria-label="Copy command">
+              <svg class="ico" aria-hidden="true"><use href="#i-copy" /></svg>
+              <span class="copy-btn__label">Copy</span>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -470,7 +525,27 @@
         <article class="feature">
           <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-globe" /></svg></div>
           <h3>Portable configuration</h3>
-          <p>Export workspace as <code>agy.yaml</code> — version it, share it, CI it. Reproduce environments identically.</p>
+          <p>Export workspace as <code>aios.yaml</code> — version it, share it, CI it. Reproduce environments identically.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-command" /></svg></div>
+          <h3>MCP tool servers</h3>
+          <p>Connect external Model Context Protocol servers — browsers, databases, deploy hooks. Zero new dependencies, no recompile.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-bot" /></svg></div>
+          <h3>Editable Agent Roster</h3>
+          <p>Set each agent's provider and model from one picker. Choices persist across updates and drive Fleet runs.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-sparkles" /></svg></div>
+          <h3>Agent Canvas &amp; Fleet</h3>
+          <p>A background Director decomposes your goal and routes each step to the right specialist — Architect, CodeSmith, Sentinel, TestRunner.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon"><svg class="ico" style="width:22px;height:22px" aria-hidden="true"><use href="#i-terminal" /></svg></div>
+          <h3>Command-line first</h3>
+          <p>Drive everything from the terminal — <code>aios deploy</code>, <code>aios run "task"</code>, <code>aios agents</code>. The same commands power CI, scripts, and the desktop app.</p>
         </article>
       </div>
 
@@ -479,7 +554,13 @@
           <span class="eyebrow" style="color: var(--accent-primary)">Try it now</span>
           <h3 style="font-size: var(--text-2xl); font-weight: var(--font-extrabold); margin: var(--space-2) 0; color: var(--text-primary);">Deploy a workspace in seconds</h3>
           <p style="color: var(--text-tertiary); margin-bottom: var(--space-4);">One command. Isolated Docker environment. Full agent team ready.</p>
-          <code style="display: inline-flex; align-items: center; gap: var(--space-2); background: var(--bg-primary); border: 1px solid var(--border-default); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--accent-primary);">$ agy deploy --preset claude</code>
+          <div class="code-copy">
+            <code>$ aios deploy --preset claude</code>
+            <button class="copy-btn" type="button" data-copy="$ aios deploy --preset claude" aria-label="Copy command">
+              <svg class="ico" aria-hidden="true"><use href="#i-copy" /></svg>
+              <span class="copy-btn__label">Copy</span>
+            </button>
+          </div>
         </div>
         <a class="btn btn--primary" href="#download">
           <span>Download AIOS</span>
@@ -499,18 +580,18 @@
       <div class="download__card glass reveal">
         <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4);">
           <span class="download__logo-wrap" aria-hidden="true">
-            <img src="favicon.svg" alt="" width="64" height="64" />
+            <img src="assets/favicon.svg" alt="" width="64" height="64" />
           </span>
           <div>
-            <h3 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0;">AIOS Setup 1.2.5</h3>
-            <p style="font-size: var(--text-sm); color: var(--text-tertiary); margin: var(--space-1) 0 0;">Windows 10/11 • Signed • Auto-updating</p>
+            <h3 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0;">AIOS Setup 1.2.4</h3>
+            <p style="font-size: var(--text-sm); color: var(--text-tertiary); margin: var(--space-1) 0 0;">Windows 10/11 — Signed · Auto-updating</p>
           </div>
         </div>
-        <a class="btn btn--primary btn--lg" href="downloads/AIOS%20Setup%201.2.5.exe" download style="width: 100%; max-width: 320px; justify-content: center;">
+        <a class="btn btn--primary btn--lg" href="assets/downloads/AIOS%20Setup%201.2.4.exe" download style="width: 100%; max-width: 320px; justify-content: center;">
           <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
           <span>Download Installer</span>
         </a>
-        <p class="download__note">By downloading, you agree to the <a href="/privacy.html" style="color: var(--accent-primary); text-decoration: underline;">Privacy Policy</a>. No telemetry. No account required.</p>
+        <p class="download__note">By downloading, you agree to the <a href="#" style="color: var(--accent-primary); text-decoration: underline;">Privacy Policy</a>. No telemetry. No account required.</p>
       </div>
     </section>
 
@@ -524,7 +605,7 @@
 
       <div class="changelog glass reveal">
         <article class="changelog__entry">
-          <div class="changelog__ver">1.2.5</div>
+          <div class="changelog__ver">1.2.4</div>
           <div class="changelog__body">
             <h3>Reliability, regenerate &amp; theme fixes</h3>
             <ul class="changelog__list">
@@ -540,7 +621,7 @@
           <div class="changelog__body">
             <h3>MCP tool servers, smarter fleet &amp; reliability</h3>
             <ul class="changelog__list">
-              <li><strong>MCP tool servers.</strong> Connect external Model Context Protocol servers in Settings → MCP Servers so your agents gain real-world tools (browsers, databases, deploy hooks) — no recompile, zero new dependencies.</li>
+              <li><strong>MCP tool servers.</strong> Connect external Model Context Protocol servers in Settings ? MCP Servers so your agents gain real-world tools (browsers, databases, deploy hooks) — no recompile, zero new dependencies.</li>
               <li><strong>Fleet respects your roster.</strong> "Run with Fleet" now uses each agent's configured provider/model from the Agent Roster (no silent local fallback) and can actually call tools during background runs.</li>
               <li><strong>Focused multi-agent runs.</strong> CrewAI-style role backstories + contracts and LangGraph-style handoffs keep specialists in their lane; upstream context is now structured and summarized.</li>
               <li><strong>Recovery &amp; transparency.</strong> Truncated/empty model replies auto-compact history and retry instead of dead-ending; a new Release Notes section in Settings summarizes every recent change.</li>
@@ -556,7 +637,7 @@
               <li><strong>Run with Fleet.</strong> A toggle in the Agents composer. The background Director decomposes your goal and routes each step to the right specialist — Architect plans, CodeSmith builds, Sentinel reviews, TestRunner tests, DeployBot ships.</li>
               <li><strong>Shared + prior-agent context.</strong> Every agent in a run receives the same project brief and memory, plus the output of the agents before it, so the fleet builds on each other's work instead of working in silos.</li>
               <li><strong>Offline by default.</strong> Routing is a deterministic intent classifier — no API key required. An optional LLM planning pass uses your active session's model when a key is present.</li>
-              <li><strong>Editable Agent Roster.</strong> In Account → Agent Roster, set each agent's provider and model from the same picker as the composer. Choices persist across updates.</li>
+              <li><strong>Editable Agent Roster.</strong> In Account ? Agent Roster, set each agent's provider and model from the same picker as the composer. Choices persist across updates.</li>
             </ul>
           </div>
         </article>
@@ -566,7 +647,7 @@
           <div class="changelog__body">
             <h3>Agent transparency</h3>
             <ul class="changelog__list">
-              <li>Live "Thinking…" timer and a collapsible <strong>Work Summary</strong> of every tool step an agent took.</li>
+              <li>Live "Thinking?" timer and a collapsible <strong>Work Summary</strong> of every tool step an agent took.</li>
               <li>Composer context bar showing token usage, so you always know how much context a turn consumed.</li>
             </ul>
           </div>
@@ -586,10 +667,65 @@
       </div>
     </section>
 
+    <!-- Testimonial -->
+    <section class="section reveal" aria-labelledby="love-title">
+      <div class="testimonial glass reveal">
+        <svg class="testimonial__quote" aria-hidden="true"><use href="#i-quote" /></svg>
+        <blockquote class="testimonial__text">
+          “AIOS replaced three separate tools in our stack. The agents actually review each other's
+          code, and the git-native workflow means nothing slips through unreviewed. It feels less
+          like a chatbot and more like a junior team that never sleeps?
+        </blockquote>
+        <div class="testimonial__author">
+          <span class="testimonial__avatar" aria-hidden="true">DK</span>
+          <div>
+            <span class="testimonial__name">Danish Malik</span>
+            <span class="testimonial__role">Founder, Netizen Labs</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="section reveal" aria-labelledby="faq-title">
+      <header class="section__head reveal">
+        <span class="eyebrow">FAQ</span>
+        <h2 id="faq-title" class="section__title">Questions, answered</h2>
+        <p class="section__sub">Everything you need to know before you hit download.</p>
+      </header>
+
+      <div class="faq reveal">
+        <details class="faq__item">
+          <summary class="faq__q">Is AIOS really local-first and private?
+            <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
+          </summary>
+          <div class="faq__a"><p>Yes. AIOS runs entirely on your machine — no account, no telemetry, no data leaves your device unless you explicitly connect an external tool server. Secrets and keys stay local.</p></div>
+        </details>
+        <details class="faq__item">
+          <summary class="faq__q">Which models can I use?
+            <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
+          </summary>
+          <div class="faq__a"><p>Claude, GPT-4, and local models — routed per task. Each agent in your roster can have its own provider and model, and Fleet respects those choices on every run.</p></div>
+        </details>
+        <details class="faq__item">
+          <summary class="faq__q">Do I need to know Docker?
+            <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
+          </summary>
+          <div class="faq__a"><p>No. One command (<code>aios deploy --preset claude</code>) scaffolds the full environment, Docker config, and agent team for you. Power users can export and version the <code>aios.yaml</code>.</p></div>
+        </details>
+        <details class="faq__item">
+          <summary class="faq__q">Is it free to download?
+            <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
+          </summary>
+          <div class="faq__a"><p>The Windows desktop app is a free, signed installer with automatic updates. You only pay for the model provider tokens you choose to use.</p></div>
+        </details>
+      </div>
+    </section>
+
     <!-- Footer -->
     <footer class="footer" role="contentinfo">
       <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-6); margin-bottom: var(--space-4);">
-        <a href="/privacy.html" class="footer__link">Privacy Policy</a>
+        <a href="#" class="footer__link">Privacy Policy</a>
         <a href="mailto:hello@aios.app" class="footer__link">Contact</a>
           <a href="https://github.com/danishmalik2011-netizen/AIOS.git" target="_blank" rel="noopener" class="footer__link">
           <svg class="ico" aria-hidden="true"><use href="#i-github" /></svg>
@@ -605,6 +741,12 @@
     </footer>
   </div>
 
-  <script src="app.js"></script>
+  <button class="to-top" id="to-top" type="button" aria-label="Back to top" hidden>
+    <svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg>
+  </button>
+
+  <script src="js/main.js"></script>
 </body>
 </html>
+
+
