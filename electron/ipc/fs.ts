@@ -224,10 +224,42 @@ export function registerFsHandlers(): void {
     return readDir(rootPath, rootPath);
   });
 
-  ipcMain.handle(CHANNELS.fsReadFile, async (_event, rootPath: string, relPath: string) => {
-    const absPath = path.join(rootPath, relPath);
-    return fs.readFile(absPath, 'utf-8');
-  });
+  ipcMain.handle(
+    CHANNELS.fsReadFile,
+    async (
+      _event,
+      rootPath: string,
+      relPath: string,
+      opts?: { offset?: number; limit?: number; numbered?: boolean },
+    ) => {
+      const absPath = path.join(rootPath, relPath);
+      const raw = await fs.readFile(absPath, 'utf-8');
+      const allLines = raw.split('\n');
+
+      // Cap the total lines returned so a single read can't blow the model
+      // context (which causes re-read loops and runaway token usage).
+      const MAX_LINES = 2000;
+      const total = allLines.length;
+      const truncatedFull = total > MAX_LINES;
+      const safeLines = truncatedFull ? allLines.slice(0, MAX_LINES) : allLines;
+
+      const offset = Math.max(0, Math.min(opts?.offset ?? 0, safeLines.length));
+      const limit = opts?.limit != null ? Math.max(1, opts.limit) : safeLines.length - offset;
+      const windowed = safeLines.slice(offset, offset + limit);
+
+      const numbered = opts?.numbered ?? true;
+      const body = numbered
+        ? windowed.map((line, i) => `${offset + i + 1}\t${line}`).join('\n')
+        : windowed.join('\n');
+
+      const readEnd = offset + windowed.length;
+      const header = `<file path="${relPath}" lines="${total}" showing="${offset + 1}-${readEnd}">\n`;
+      const footer = truncatedFull
+        ? `\n... (file truncated at ${MAX_LINES} lines; use offset/limit to read more) ...`
+        : '';
+      return header + body + footer + '\n</file>';
+    },
+  );
 
   ipcMain.handle(
     CHANNELS.fsSearch,

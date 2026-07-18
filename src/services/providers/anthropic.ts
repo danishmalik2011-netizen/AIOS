@@ -122,7 +122,7 @@ export const anthropicDriver: ProviderDriver = {
         system,
         messages,
         ...(tools && tools.length > 0
-          ? { tools, tool_choice: { type: 'any' } }
+          ? { tools, tool_choice: { type: 'auto' } }
           : {}),
         stream: true,
       }),

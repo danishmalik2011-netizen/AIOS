@@ -155,7 +155,7 @@
     var(--border-subtle) calc(25% - 1px),
     var(--border-subtle) 25%
   );
-  background-color: rgba(18, 18, 30, 0.4);
+  background-color: var(--bg-tertiary);
 }
 
 .execution-timeline__bar {

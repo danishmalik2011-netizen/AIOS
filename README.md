@@ -19,8 +19,9 @@ AIOS is designed as the next generation beyond Cursor, VS Code, Claude Code, and
 | **Git Management** | Staged/unstaged/untracked views, AI-assisted commit messages, and a commit-history timeline |
 | **Prompt Library** | Reusable, categorized prompt templates with `{{variables}}`, favorites, and usage tracking |
 | **Secret Management** | Local, masked API-key & environment-variable vault |
-| **Unified Providers** | Abstraction over Anthropic, OpenAI, Google, Ollama (local), and a mock provider |
+| **Unified Providers** | Live drivers for Anthropic, OpenAI, OpenAI-compatible, Ollama (local), SSE streams, plus a mock provider for offline exploration |
 | **Command Palette** | `Ctrl/Cmd+K` fuzzy command runner for navigation and actions |
+| **Headless CLI** | `aios "<prompt>"` runs one task; bare `aios` opens an interactive REPL — same agent runtime, tools, providers, and retry/backoff as the desktop app, wired to a Node transport + TUI |
 | **Premium UX** | Dark glassmorphism theme, motion, dockable/resizable layout, keyboard-first navigation, toasts |
 
 ---
@@ -37,35 +38,93 @@ src/
 ├── core/
 │   └── types.ts             # Single source of truth for shared domain types
 │
+├── constants/
+│   └── models.ts            # Model/provider constant catalog
+│
+├── types/
+│   └── electron.d.ts        # Electron preload/IPC type declarations
+│
+├── services/                # Business logic + integrations (no UI)
+│   ├── agentRuntime.ts      # Headless runAgentTurn — shared by desktop app AND CLI
+│   ├── runManager.ts        # Run/session lifecycle management
+│   ├── fleetTools.ts        # Fleet-wide tool surface
+│   ├── orchestration/       # director.ts, engine.ts, workflowRunner.ts
+│   ├── providers/           # anthropic, openai, ollama, openaiCompatible, sse,
+│   │                        #   registry, keyVault, toolSchemas, types
+│   ├── mcp/                 # MCP client + registry + types
+│   ├── retrieval/           # lexical + semantic retrieval, index, types
+│   └── plugins/             # pluginStore + types
+│
+├── cli/                     # NEW — headless `aios` command + interactive REPL
+│   ├── index.ts             # Entry: arg parsing, REPL, one-shot task runner
+│   ├── executor.ts          # Turn execution loop
+│   ├── ui.ts                # TUI: banners, slash commands, markdown, bubbles
+│   ├── config.ts            # Provider/key config + history persistence
+│   ├── transport.ts         # Node transport for the agent runtime
+│   ├── modal.ts             # In-terminal modal pages
+│   └── providerCatalog.ts   # Built-in provider catalog
+│
 ├── store/                   # State layer — Zustand, one store per domain
 │   ├── useSettingsStore.ts  # Navigation, layout, editor prefs, providers, secrets (persisted)
 │   ├── useAgentStore.ts     # Agents + per-agent conversations
+│   ├── useChatStore.ts      # Chat threads
 │   ├── useWorkflowStore.ts  # React Flow nodes/edges + orchestration status
+│   ├── useOrchestratorStore.ts # Orchestration run state
+│   ├── useRunStore.ts       # Active runs
+│   ├── usePlanStore.ts      # Plans
 │   ├── useProjectStore.ts   # File tree, open buffers, contents
 │   ├── useGitStore.ts       # Repo status, staging, commits
 │   ├── useMemoryStore.ts    # Knowledge base entries + filtering
 │   ├── usePromptStore.ts    # Prompt templates (persisted)
 │   ├── useTerminalStore.ts  # Terminal sessions + output
-│   └── useNotificationStore.ts # Toast notifications (+ `toast` helper)
+│   ├── usePermissionsStore.ts   # Tool/command approval state
+│   ├── useCommandApprovalStore.ts # Command-approval modal state
+│   ├── useDiffReviewStore.ts    # Diff-review modal state
+│   ├── useFollowPanelStore.ts   # Agent-follow panel state
+│   ├── useAutoAccessStore.ts    # Auto-access toggles
+│   ├── useNotificationStore.ts  # Toast notifications (+ `toast` helper)
+│   └── workspaceCache.ts    # Workspace file cache
 │
 ├── hooks/
 │   ├── useAnimatedCounter.ts # rAF easing for KPI counters
 │   └── useHotkeys.ts         # Global keyboard-shortcut binding
 │
 ├── components/
-│   ├── layout/              # AppShell, ActivityBar, Sidebar, StatusBar, ViewRouter
+│   ├── layout/              # AppShell, ActivityBar, Sidebar, StatusBar, TopBar, ViewRouter
 │   ├── command/             # CommandPalette (Ctrl/Cmd+K)
 │   ├── dashboard/           # Dashboard + MetricsCards, AgentActivityFeed, ProgressTracker, ExecutionTimeline
 │   ├── workflow/            # Custom React Flow node
-│   ├── views/               # One component per activity: Agents, Workflow, Files, Git, Memory, Prompts, Terminal, Settings
-│   └── shared/              # Design-system primitives: Button, IconButton, Input, Modal, Badge, Progress, Tooltip, Spinner, Toaster
+│   ├── views/               # One component per activity: Agents, Workflow, Files, Git,
+│   │                        #   Memory, Prompts, Terminal, Settings, Account, Notifications,
+│   │                        #   Preview, Workspaces, AgentsFollowPanel
+│   └── shared/              # Design-system primitives: Button, IconButton, Input, Modal,
+│                            #   Badge, Progress, Tooltip, Spinner, Toaster, Dropdown,
+│                            #   ContextMenu, AgentAvatar, AiosLogo, Wordmark, ProviderIcon,
+│                            #   CommandApprovalModal, DiffReviewModal, ModelProviderDropdown
 │
 └── styles/                  # Design tokens & global CSS
     ├── index.css            # CSS custom properties (colors, spacing, type, motion, z-index, layout)
     ├── glassmorphism.css    # Glass utility classes
     ├── animations.css       # Keyframes + animation utilities
     ├── typography.css       # Base type styles
+    ├── themes.css           # Theme definitions (dark + light)
     └── reset.css            # Normalize
+```
+
+### Project layout (beyond `src/`)
+
+```
+aios222/
+├── src/                     # React + Electron renderer (see tree above)
+├── electron/                # Electron main process: main, preload, ipc/ (fs, etc.)
+├── cli/                     # (lives under src/cli) — see above
+├── scripts/                 # build-cli.cjs, prepare-cli.cjs — CLI bundling
+├── landing/                 # Standalone marketing site (Vercel) — index.html, app.js, downloads/
+├── dist/                    # Vite renderer build output
+├── dist-cli/                # esbuild CLI bundle → dist-cli/aios.cjs (the `aios` bin)
+├── dist-electron/           # Electron main/preload build output
+├── release/                 # electron-builder installer output (win/mac/linux)
+└── public/                  # Static assets (logo.png, etc.)
 ```
 
 ### Layered design
@@ -81,10 +140,10 @@ src/
 ```
 User action ──▶ Store action (Zustand) ──▶ State update ──▶ Selective re-render
                                      └────▶ toast() side-effects
-Provider abstraction (settings.providers) ──▶ (future) live agent calls
+Provider abstraction (settings.providers) ──▶ live agent calls (Anthropic/OpenAI/Ollama/MCP)
 ```
 
-Today the agents, git, terminal, and providers run on rich mock/simulation layers so the entire experience is explorable offline. Each store is the single seam where a real backend/CLI/provider integration plugs in — the UI never talks to a provider directly.
+The app ships **real** integrations today: live provider drivers (Anthropic, OpenAI, OpenAI-compatible, Ollama/local, SSE), an MCP client for tool servers, a real orchestration engine (`services/orchestration`: director + engine + workflowRunner), and a headless agent runtime (`runAgentTurn`) that powers **both** the desktop app and the `aios` CLI. The UI never talks to a provider directly — every call flows through `services/providers` and the orchestration layer, keeping the renderer, CLI, and (future) backend behind one seam.
 
 ---
 
@@ -92,14 +151,24 @@ Today the agents, git, terminal, and providers run on rich mock/simulation layer
 
 ```bash
 # From the project root
-npm install          # install dependencies
+npm install          # install deps; `prepare` script auto-builds the CLI
 npm run dev          # start the Vite dev server (http://localhost:5173)
 npm run typecheck    # strict TypeScript check, no emit
-npm run build        # type-check + production build
+npm run build        # type-check + production renderer build
 npm run preview      # preview the production build
+
+# Desktop app (Electron)
+npm run dist         # build renderer + electron-builder → release/ installers
+
+# Headless CLI
+npm run cli          # build the `aios` CLI → dist-cli/aios.cjs
+npm link             # (or npm i -g .) to expose the global `aios` command
+aios --help          # one-shot: aios "add dark mode"  ·  REPL: just `aios`
 ```
 
-Requires Node 18+.
+Requires Node 18+. The CLI is bundled with esbuild (`scripts/build-cli.cjs`) into a
+single self-contained `dist-cli/aios.cjs` and exposed via the `"bin": { "aios": ... }`
+field in `package.json`.
 
 ---
 
@@ -130,8 +199,8 @@ Requires Node 18+.
 AIOS is scaffolded to grow into a complete AI OS:
 
 - **Plugin SDK** — third-party agents, tools, integrations, and custom workflow nodes (Settings ▸ Plugins is the entry surface).
-- **Provider drivers** — the unified provider abstraction is ready for live Anthropic/OpenAI/Google/Ollama drivers.
-- **Real orchestration engine** — the workflow graph is the contract for a background job runner executing agents in parallel.
+- **Provider drivers** — live Anthropic/OpenAI/OpenAI-compatible/Ollama/SSE drivers are in; the catalog (`cli/providerCatalog.ts` + `services/providers/registry.ts`) is the seam for adding more.
+- **Real orchestration engine** — the workflow graph drives a background job runner (`services/orchestration`) executing agents in parallel; the same runtime backs the headless CLI.
 - **Encrypted sync** — local-first today, with an opt-in path to sync encrypted project metadata across devices.
 - **Live previews & deployments** — dedicated panes for web/desktop/mobile previews and release workflows.
 
@@ -139,7 +208,7 @@ AIOS is scaffolded to grow into a complete AI OS:
 
 ## 🧱 Tech Stack
 
-React 19 · TypeScript (strict) · Vite 6 · Zustand · React Flow (`@xyflow/react`) · Monaco Editor · Recharts · lucide-react
+React 19 · TypeScript (strict) · Vite 6 · Electron 33 · electron-builder · Zustand · React Flow (`@xyflow/react`) · Monaco Editor · Recharts · lucide-react · esbuild (CLI bundle) · simple-git · node-pty
 
 ---
 

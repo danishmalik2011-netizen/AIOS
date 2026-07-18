@@ -259,7 +259,7 @@
         </p>
 
         <div class="hero__actions">
-          <a class="btn btn--primary btn--lg" href="downloads/AIOS%20Setup%201.2.3.exe" download>
+          <a class="btn btn--primary btn--lg" href="downloads/AIOS%20Setup%201.2.4.exe" download>
             <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
             <span>Download for Windows</span>
             <svg class="ico" aria-hidden="true"><use href="#i-arrow" /></svg>
@@ -502,11 +502,11 @@
             <img src="favicon.svg" alt="" width="64" height="64" />
           </span>
           <div>
-            <h3 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0;">AIOS Setup 1.2.3</h3>
+            <h3 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0;">AIOS Setup 1.2.4</h3>
             <p style="font-size: var(--text-sm); color: var(--text-tertiary); margin: var(--space-1) 0 0;">Windows 10/11 • Signed • Auto-updating</p>
           </div>
         </div>
-        <a class="btn btn--primary btn--lg" href="downloads/AIOS%20Setup%201.2.3.exe" download style="width: 100%; max-width: 320px; justify-content: center;">
+        <a class="btn btn--primary btn--lg" href="downloads/AIOS%20Setup%201.2.4.exe" download style="width: 100%; max-width: 320px; justify-content: center;">
           <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
           <span>Download Installer</span>
         </a>
@@ -523,6 +523,18 @@
       </header>
 
       <div class="changelog glass reveal">
+        <article class="changelog__entry">
+          <div class="changelog__ver">1.2.4</div>
+          <div class="changelog__body">
+            <h3>Reliability, regenerate &amp; theme fixes</h3>
+            <ul class="changelog__list">
+              <li><strong>HTTP 400 hardened.</strong> Transient provider 400/429/5xx errors now auto-retry with exponential backoff, and streamed tool-call arguments are sanitized — the recurring "Provider error 400" after a long run is gone.</li>
+              <li><strong>Regenerate any message.</strong> Every assistant reply now has a Regenerate (and Retry-on-error) action so you can re-run a turn without losing the thread.</li>
+              <li><strong>Light theme perfected.</strong> Removed hardcoded dark colors so hover, padding, and borders follow the active theme in both light and dark modes — no more dark bleed in light.</li>
+            </ul>
+          </div>
+        </article>
+
         <article class="changelog__entry">
           <div class="changelog__ver">1.2.3</div>
           <div class="changelog__body">

@@ -777,7 +777,7 @@ export function AgentsView() {
       let env = '';
       if (projectRoot && window.aios) {
         try {
-          const pkg = await window.aios.fs.readFile(projectRoot, 'package.json');
+          const pkg = await window.aios.fs.readFile(projectRoot, 'package.json', { numbered: false });
           env += `\nProject package.json (excerpt):\n${pkg.slice(0, 1400)}`;
         } catch {
           /* no package.json */
@@ -1107,7 +1107,9 @@ export function AgentsView() {
       case 'read_file': {
         const filePath = args.path;
         if (!filePath) throw new Error('Missing file path parameter.');
-        return await window.aios.fs.readFile(root, filePath);
+        const offset = typeof args.offset === 'number' ? args.offset : undefined;
+        const limit = typeof args.limit === 'number' ? args.limit : undefined;
+        return await window.aios.fs.readFile(root, filePath, { offset, limit });
       }
       case 'search_code': {
         const query = args.query;
@@ -1128,7 +1130,7 @@ export function AgentsView() {
 
         let original = '';
         try {
-          original = await window.aios.fs.readFile(root, filePath);
+          original = await window.aios.fs.readFile(root, filePath, { numbered: false });
         } catch {
           original = '';
         }
@@ -1300,7 +1302,7 @@ export function AgentsView() {
   const autoDetectVerifyCommand = async (root: string): Promise<string> => {
     if (!root || !window.aios?.fs) return 'npx tsc --noEmit';
     try {
-      const raw = await window.aios.fs.readFile(root, 'package.json');
+      const raw = await window.aios.fs.readFile(root, 'package.json', { numbered: false });
       const pkg = JSON.parse(raw);
       const scripts = pkg.scripts || {};
       if (scripts.test) return 'npm test';
@@ -1422,7 +1424,7 @@ export function AgentsView() {
         if (call.name === 'write_file') {
           let original = '';
           try {
-            original = await window.aios!.fs.readFile(root, args.path);
+            original = await window.aios!.fs.readFile(root, args.path, { numbered: false });
           } catch {
             original = '';
           }

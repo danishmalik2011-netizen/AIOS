@@ -12,23 +12,72 @@ import type { ToolDefinition } from './types';
 export const AGENT_TOOLS: ToolDefinition[] = [
   {
     name: 'read_file',
-    description: 'Read the full text contents of a file in the workspace, given its path relative to the project root.',
+    description:
+      'Read the contents of a file in the workspace. By default returns up to 2000 lines with 1-based line numbers. Use offset/limit to read only the targeted section you need to inspect or fix — this keeps context small and avoids re-reading the whole file. Output is wrapped in <file path lines=... showing=A-B> ... </file>.',
     parameters: {
       type: 'object',
       properties: {
         path: { type: 'string', description: 'Path relative to the project root, e.g. "src/index.ts".' },
+        offset: {
+          type: 'number',
+          description:
+            '0-based line index to start reading from (e.g. 0 for the top, 120 to skip the first 120 lines). Defaults to 0. Use this to read only the part of the file you care about.',
+        },
+        limit: {
+          type: 'number',
+          description:
+            'Maximum number of lines to return from the offset. Defaults to the remainder of the file (capped at 2000). Use a small value (e.g. 40) to read only the targeted block.',
+        },
       },
       required: ['path'],
     },
   },
   {
     name: 'write_file',
-    description: 'Create or overwrite a file with the given contents. The user reviews the diff before it is applied unless auto-apply is on.',
+    description:
+      'Create a NEW file or fully replace an EXISTING file. ' +
+      'For edits to existing files (bug fixes, refactors, adding sections) prefer patch_file ' +
+      'which is safer — it only touches the changed span. Use write_file only when creating a ' +
+      'new file or when the change is large enough to rewrite the whole file.',
     parameters: {
       type: 'object',
       properties: {
         path: { type: 'string', description: 'Path relative to the project root.' },
         content: { type: 'string', description: 'The full new file contents.' },
+      },
+      required: ['path', 'content'],
+    },
+  },
+  {
+    name: 'patch_file',
+    description:
+      'Surgically edit an existing file by replacing an exact string span with new content. ' +
+      'Safer than write_file for targeted changes — only the matched region is touched. ' +
+      'The old_str must match the file EXACTLY (including whitespace/indentation). ' +
+      'Only the FIRST occurrence is replaced. Use write_file if the file does not exist yet.',
+    parameters: {
+      type: 'object',
+      properties: {
+        path:    { type: 'string', description: 'Path to the file, relative to the project root.' },
+        old_str: { type: 'string', description: 'The exact string to find and replace. Must match exactly.' },
+        new_str: { type: 'string', description: 'The replacement string.' },
+      },
+      required: ['path', 'old_str', 'new_str'],
+    },
+  },
+  {
+    name: 'append_file',
+    description:
+      'Append content to the END of an existing file without overwriting it. ' +
+      'Use this for writing LARGE files in safe chunks: ' +
+      '(1) write_file for the first chunk, (2) append_file for each subsequent chunk. ' +
+      'Returns the new total line count so you can verify nothing was truncated. ' +
+      'Also use this to add new sections, functions, or CSS blocks to an existing file.',
+    parameters: {
+      type: 'object',
+      properties: {
+        path:    { type: 'string', description: 'Path to the file, relative to the project root.' },
+        content: { type: 'string', description: 'The content to append at the end of the file.' },
       },
       required: ['path', 'content'],
     },
@@ -146,21 +195,6 @@ export const AGENT_TOOLS: ToolDefinition[] = [
         },
       },
       required: ['steps'],
-    },
-  },
-  {
-    name: 'respond_to_user',
-    description:
-      'Deliver your final response to the user: an answer, a summary of what was done, remaining work, or that the task is complete. Call this whenever no further workspace action is needed. Put your full message in the "message" parameter. Never end a turn with bare narration — always route your reply through this tool.',
-    parameters: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          description: 'The complete message to show the user (markdown/code/bullets are fine).',
-        },
-      },
-      required: ['message'],
     },
   },
 ];

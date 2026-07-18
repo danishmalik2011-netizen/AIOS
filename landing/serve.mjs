@@ -42,5 +42,5 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`🚀 AIOS landing running at http://localhost:${PORT}`);
-  console.log(`   Download link: http://localhost:${PORT}/downloads/AIOS%20Setup%201.1.3.exe`);
+  console.log(`   Download link: http://localhost:${PORT}/downloads/AIOS%20Setup%201.2.3.exe`);
 });

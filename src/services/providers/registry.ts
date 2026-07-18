@@ -145,7 +145,7 @@ export async function resolveDriver(
     if (d) return d;
   }
   if (preferred) {
-    const d = drivers[preferred];
+    const d = drivers[preferred] ?? getDriver(preferred);
     if (d && (await d.isAvailable())) return d;
   }
   for (const id of PREFERENCE) {

@@ -49,7 +49,9 @@ export async function executeFleetTool(
     case 'read_file': {
       const p = str(args.path);
       if (!p) throw new Error('Missing file path parameter.');
-      return await window.aios.fs.readFile(root, p);
+      const offset = typeof args.offset === 'number' ? args.offset : undefined;
+      const limit = typeof args.limit === 'number' ? args.limit : undefined;
+      return await window.aios.fs.readFile(root, p, { offset, limit });
     }
     case 'search_code': {
       const q = str(args.query);

@@ -58,6 +58,8 @@ body[data-theme="dark-slate"] {
   --glass-light-bg: rgba(18, 18, 30, 0.4);
   --glass-panel-bg: rgba(12, 12, 20, 0.7);
   --glass-card-bg: rgba(24, 24, 40, 0.6);
+  --glass-hover-bg: rgba(30, 30, 50, 0.7);
+  --glass-badge-bg: rgba(24, 24, 40, 0.5);
 }
 
 /* ---- 1. CLEAN LIGHT THEME ---- */
@@ -121,6 +123,8 @@ body[data-theme="light"] {
   --glass-light-bg: rgba(255, 255, 255, 0.4);
   --glass-panel-bg: rgba(245, 246, 248, 0.8);
   --glass-card-bg: rgba(255, 255, 255, 0.85);
+  --glass-hover-bg: rgba(0, 0, 0, 0.05);
+  --glass-badge-bg: rgba(0, 0, 0, 0.05);
 }
 
 /* ---- 2. NORDIC FROST THEME ---- */
@@ -178,6 +182,8 @@ body[data-theme="nord"] {
   --glass-light-bg: rgba(46, 52, 64, 0.4);
   --glass-panel-bg: rgba(59, 66, 82, 0.75);
   --glass-card-bg: rgba(46, 52, 64, 0.65);
+  --glass-hover-bg: rgba(216, 222, 233, 0.08);
+  --glass-badge-bg: rgba(216, 222, 233, 0.08);
 }
 
 /* ---- 3. SOLARIZED DARK THEME ---- */
@@ -235,6 +241,8 @@ body[data-theme="solarized-dark"] {
   --glass-light-bg: rgba(0, 43, 54, 0.4);
   --glass-panel-bg: rgba(7, 54, 66, 0.8);
   --glass-card-bg: rgba(0, 43, 54, 0.7);
+  --glass-hover-bg: rgba(147, 161, 161, 0.08);
+  --glass-badge-bg: rgba(147, 161, 161, 0.08);
 }
 
 /* ---- 4. MONOKAI WARM THEME ---- */
@@ -292,6 +300,8 @@ body[data-theme="monokai"] {
   --glass-light-bg: rgba(39, 40, 34, 0.4);
   --glass-panel-bg: rgba(39, 40, 34, 0.8);
   --glass-card-bg: rgba(43, 44, 38, 0.7);
+  --glass-hover-bg: rgba(248, 248, 242, 0.08);
+  --glass-badge-bg: rgba(248, 248, 242, 0.08);
 }
 
 /* ---- 5. CLAUDE WARM THEME ---- */
@@ -355,6 +365,8 @@ body[data-theme="claude"] {
   --glass-light-bg: rgba(251, 250, 247, 0.4);
   --glass-panel-bg: rgba(245, 237, 227, 0.8);
   --glass-card-bg: rgba(251, 250, 247, 0.85);
+  --glass-hover-bg: rgba(60, 57, 53, 0.06);
+  --glass-badge-bg: rgba(60, 57, 53, 0.06);
 }
 
 /* ---- 6. CLAUDE DARK THEME ---- */
@@ -418,4 +430,6 @@ body[data-theme="claude-dark"] {
   --glass-light-bg: rgba(24, 24, 22, 0.4);
   --glass-panel-bg: rgba(34, 34, 31, 0.8);
   --glass-card-bg: rgba(34, 34, 31, 0.85);
+  --glass-hover-bg: rgba(245, 237, 227, 0.05);
+  --glass-badge-bg: rgba(245, 237, 227, 0.05);
 }

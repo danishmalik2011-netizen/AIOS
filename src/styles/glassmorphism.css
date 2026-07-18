@@ -45,11 +45,7 @@
 }
 
 .glass-card:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 50, 0.7) 0%,
-    rgba(24, 24, 40, 0.5) 100%
-  );
+  background: var(--glass-hover-bg, rgba(30, 30, 50, 0.7));
   border-color: var(--border-default);
   box-shadow: var(--shadow-md), var(--shadow-inset);
   transform: translateY(-1px);
@@ -115,7 +111,7 @@
 
 .glass-button:active {
   transform: translateY(0);
-  background: rgba(36, 36, 60, 0.8);
+  background: var(--bg-active);
 }
 
 /* ---- Glass Badges ---- */
@@ -123,7 +119,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  background: rgba(24, 24, 40, 0.5);
+  background: var(--glass-badge-bg, rgba(24, 24, 40, 0.5));
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   border: 1px solid var(--border-subtle);

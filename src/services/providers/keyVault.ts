@@ -23,8 +23,17 @@ export function isRealKey(value: string | undefined | null): value is string {
   return true;
 }
 
+function hasLocalStorage(): boolean {
+  try {
+    return typeof localStorage !== 'undefined';
+  } catch {
+    return false;
+  }
+}
+
 function readLocalStorageMap(): KeyMap {
   try {
+    if (!hasLocalStorage()) return {};
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as KeyMap) : {};
   } catch {
@@ -34,6 +43,7 @@ function readLocalStorageMap(): KeyMap {
 
 function writeLocalStorageMap(map: KeyMap): void {
   try {
+    if (!hasLocalStorage()) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
   } catch {
     /* storage unavailable — non-fatal */
@@ -50,7 +60,7 @@ function writeLocalStorageMap(map: KeyMap): void {
 let cache: KeyMap = readLocalStorageMap();
 
 async function hydrateFromElectron(): Promise<void> {
-  if (!window.aios) return;
+  if (typeof window === 'undefined' || !window.aios) return;
   // Read secrets for every configured provider (built-ins + custom ones the
   // user added), not just a hardcoded list, so custom provider keys survive.
   const providers: ProviderType[] = useSettingsStore.getState().providers.map((p) => p.id);
@@ -73,7 +83,7 @@ export function getApiKey(provider: ProviderType): string | null {
 
 export function setApiKey(provider: ProviderType, key: string): void {
   cache = { ...cache, [provider]: key };
-  if (window.aios) {
+  if (typeof window !== 'undefined' && window.aios) {
     void window.aios.secrets.set(provider, key);
   } else {
     writeLocalStorageMap(cache);
@@ -84,7 +94,7 @@ export function clearApiKey(provider: ProviderType): void {
   const next = { ...cache };
   delete next[provider];
   cache = next;
-  if (window.aios) {
+  if (typeof window !== 'undefined' && window.aios) {
     void window.aios.secrets.clear(provider);
   } else {
     writeLocalStorageMap(cache);

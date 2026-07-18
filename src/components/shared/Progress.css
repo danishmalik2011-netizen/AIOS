@@ -4,7 +4,7 @@
 
 .aios-progress {
   width: 100%;
-  background: rgba(18, 18, 30, 0.6);
+  background: var(--bg-tertiary);
   border-radius: var(--radius-full);
   overflow: hidden;
   border: 1px solid var(--border-subtle);

@@ -11,8 +11,11 @@ const api = {
 
   fs: {
     readTree: (rootPath: string) => ipcRenderer.invoke(CHANNELS.fsReadTree, rootPath),
-    readFile: (rootPath: string, relPath: string): Promise<string> =>
-      ipcRenderer.invoke(CHANNELS.fsReadFile, rootPath, relPath),
+    readFile: (
+      rootPath: string,
+      relPath: string,
+      opts?: { offset?: number; limit?: number; numbered?: boolean },
+    ): Promise<string> => ipcRenderer.invoke(CHANNELS.fsReadFile, rootPath, relPath, opts),
     search: (rootPath: string, query: string, opts?: FsSearchOptions): Promise<FsSearchMatch[]> =>
       ipcRenderer.invoke(CHANNELS.fsSearch, rootPath, query, opts),
     writeFile: (rootPath: string, relPath: string, content: string): Promise<boolean> =>

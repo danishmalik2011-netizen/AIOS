@@ -65,7 +65,7 @@
 
 /* ---- Variant: Secondary (Glass) ---- */
 .aios-button--secondary {
-  background: rgba(24, 24, 40, 0.6);
+  background: var(--glass-card-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-color: var(--border-default);
@@ -73,7 +73,7 @@
 }
 
 .aios-button--secondary:hover:not(:disabled) {
-  background: rgba(30, 30, 50, 0.7);
+  background: var(--bg-hover);
   border-color: var(--border-strong);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
@@ -81,7 +81,7 @@
 
 .aios-button--secondary:active:not(:disabled) {
   transform: translateY(0);
-  background: rgba(36, 36, 60, 0.8);
+  background: var(--bg-active);
 }
 
 /* ---- Variant: Ghost ---- */

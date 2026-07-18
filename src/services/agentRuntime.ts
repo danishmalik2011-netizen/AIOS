@@ -33,12 +33,34 @@ export type ToolExecutor = (
   args: Record<string, unknown>,
 ) => Promise<string>;
 
+/** Hard cap on a single tool result. Raised to 8 000 chars so read_file
+ *  verify-after-write calls can return enough content to confirm a write
+ *  was complete. The main cause of the original “8 MB” context errors was
+ *  the old 4 000-char cap getting hit on every large read. */
+const MAX_TOOL_OUTPUT = 8_000;
+
 /** History → provider messages (drop empty/system rows; cap for context). */
 function toProviderMessages(history: ChatMessage[]): ProviderMessage[] {
   return history
-    .filter((m) => m.role !== 'system' && m.content.trim())
-    .slice(-12)
-    .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+    .filter((m) => m.role !== 'system')
+    .slice(-40)
+    .map((m) => {
+      const pm: ProviderMessage = {
+        role: m.role as any,
+        content: m.content || '',
+      };
+      if (m.toolCalls && m.toolCalls.length > 0) {
+        pm.toolCalls = m.toolCalls.map((tc) => ({
+          id: tc.id,
+          name: tc.name,
+          arguments: tc.arguments,
+        }));
+      }
+      if (m.toolCallId) {
+        pm.toolCallId = m.toolCallId;
+      }
+      return pm;
+    });
 }
 
 export interface AgentTurnResult {
@@ -77,11 +99,12 @@ export async function runAgentTurn(
         system: agent.systemPrompt,
         messages,
         temperature: agent.temperature,
-        maxTokens: agent.maxTokens || 1024,
+        maxTokens: agent.maxTokens || 4096,
         ...(tools && tools.length > 0 && executeTool ? { tools } : {}),
       },
       {
         preferred: provider,
+        strict: !!override?.provider,
         signal: handlers.signal,
         onDelta: (d) => {
           acc += d;
@@ -102,8 +125,8 @@ export async function runAgentTurn(
       };
     }
 
-    // Guard against runaway tool loops.
-    if (toolRounds >= 8) {
+    // Guard against runaway tool loops (raised from 8 → 25 for large tasks).
+    if (toolRounds >= 25) {
       return {
         content:
           acc ||
@@ -117,10 +140,19 @@ export async function runAgentTurn(
     }
 
     // Append the assistant tool-call turn, then each tool result.
-    messages.push({
-      role: 'assistant',
-      content: result.content,
+    const assistantMsg = {
+      role: 'assistant' as const,
+      content: result.content || '',
       toolCalls: result.toolCalls,
+    };
+    messages.push(assistantMsg);
+    history.push({
+      id: `a-t-${Date.now()}-${Math.random()}`,
+      agentId: agent.id || 'cli',
+      role: 'assistant',
+      content: assistantMsg.content,
+      toolCalls: assistantMsg.toolCalls,
+      timestamp: Date.now(),
     });
 
     for (const call of result.toolCalls) {
@@ -137,10 +169,25 @@ export async function runAgentTurn(
       } catch (e) {
         output = `Tool "${call.name}" failed: ${(e as Error).message}`;
       }
+      // Truncate oversized tool outputs so they never blow the context window.
+      if (output.length > MAX_TOOL_OUTPUT) {
+        output =
+          output.slice(0, MAX_TOOL_OUTPUT) +
+          `\n... [truncated — ${output.length} chars total; use offset/limit args to read more]`;
+      }
       messages.push({ role: 'tool', toolCallId: call.id, content: output });
+      history.push({
+        id: `t-${call.id}`,
+        agentId: agent.id || 'cli',
+        role: 'tool',
+        toolCallId: call.id,
+        content: output,
+        timestamp: Date.now(),
+      });
     }
 
     toolRounds += 1;
-    acc = ''; // text between tool rounds isn't a final answer; keep looping.
+    // Do NOT reset acc — any text the model wrote before calling tools is
+    // valuable; we want to preserve it across rounds.
   }
 }

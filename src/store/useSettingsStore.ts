@@ -1,6 +1,23 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AppSettings, AIProvider, SidebarView, UpdateStatusPayload } from '@/core/types';
+
+/** In the desktop app / browser this is localStorage; in a plain Node
+ *  context (the CLI) there is no localStorage, so fall back to a silent
+ *  no-op store instead of emitting persist warnings on every write. */
+const safeStorage = (() => {
+  try {
+    if (typeof localStorage !== 'undefined') return createJSONStorage(() => localStorage);
+  } catch {
+    /* fall through */
+  }
+  const noop = {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+  };
+  return createJSONStorage(() => noop as unknown as Storage);
+})();
 
 export interface SecretEntry {
   id: string;
@@ -168,6 +185,7 @@ export const useSettingsStore = create<SettingsStore>()(
     }),
     {
       name: 'aios-settings',
+      storage: safeStorage,
       partialize: (state) => ({
         settings: state.settings,
         activeView: state.activeView,
