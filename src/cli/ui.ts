@@ -9,6 +9,7 @@
 import readline from 'node:readline';
 import { exec } from 'node:child_process';
 import os from 'node:os';
+import { VERB_THEMES, type AnimVerb, buildWingedFrames } from './anim';
 
 const readClipboard = (callback: (text: string) => void) => {
   let cmd = '';
@@ -27,6 +28,27 @@ const readClipboard = (callback: (text: string) => void) => {
     }
     callback(stdout.toString());
   });
+};
+
+const writeClipboard = (text: string): void => {
+  if (process.platform === 'darwin') {
+    const cp = require('node:child_process');
+    const p2 = cp.spawn('pbcopy', []);
+    p2.stdin.write(text);
+    p2.stdin.end();
+    return;
+  }
+  if (process.platform === 'win32') {
+    const cp = require('node:child_process');
+    const safe = text.replace(/"/g, '`"');
+    const ps = cp.spawn('powershell.exe', ['-NoProfile', '-Command', `Set-Clipboard -Value "${safe}"`]);
+    ps.on('error', () => {});
+    return;
+  }
+  const cp = require('node:child_process');
+  const p3 = cp.spawn('sh', ['-c', 'xclip -selection clipboard -in || xsel -ib']);
+  p3.stdin.write(text);
+  p3.stdin.end();
 };
 
 /* ---- ANSI ---------------------------------------------------------- */
@@ -62,6 +84,11 @@ const C = supportsColor()
 
 function paint(color: string, text: string): string {
   return color && supportsColor() ? `${color}${text}${C.reset ?? ''}` : text;
+}
+
+/** Strip ANSI escape sequences so we can measure visible (printed) width. */
+function stripAnsi(s: string): string {
+  return s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
 }
 
 export const ansi = {
@@ -352,27 +379,30 @@ export function getThemeColorFn(name: string) {
   }
 }
 
+/**
+ * Invisible chat bubble - no box borders. A coloured role chip
+ * (you / aios) + timestamp, then the content indented and tinted
+ * in the role theme colour. Reads as a clean transcript.
+ */
 export function renderBubble(role: 'user' | 'assistant', header: string, content: string): string {
   const termWidth = Math.min((process.stdout.columns || 80) - 6, 86);
   const userFn = getThemeColorFn(userThemeColor);
   const agentFn = getThemeColorFn(agentThemeColor);
   const color = role === 'user' ? userFn : agentFn;
-  
-  const title = `  ${role === 'user' ? '\u25c8 you' : '\u25c9 aios'} \u00b7 ${header} `;
-  const borderLen = Math.max(2, termWidth - title.length - 3);
-  const top = color(`  \u250c\u2500${title}${"\u2500".repeat(borderLen)}\u2510`);
-  
+
+  const chip = role === 'user' ? '\u25c8 you' : '\u25c9 aios';
+  const title = '  ' + ansi.bold(color(chip)) + ' ' + ansi.dim('\u00b7 ' + header);
+
   const contentWidth = termWidth - 4;
   const rawLines = content.replace(/\t/g, '  ').split('\n');
   const lines: string[] = [];
-  
+
   for (const rawLine of rawLines) {
     let l = rawLine.replace(/\r/g, '');
     if (!l.trim()) {
       lines.push('');
       continue;
     }
-    // Simple wrap
     while (l.length > contentWidth) {
       let splitIdx = l.lastIndexOf(' ', contentWidth);
       if (splitIdx <= 0) splitIdx = contentWidth;
@@ -382,22 +412,12 @@ export function renderBubble(role: 'user' | 'assistant', header: string, content
     if (l) lines.push(l);
   }
 
-  // Remove leading and trailing empty lines to prevent vertical strays inside the bubble box
-  while (lines.length > 0 && lines[0] === '') {
-    lines.shift();
-  }
-  while (lines.length > 0 && lines[lines.length - 1] === '') {
-    lines.pop();
-  }
-  
-  const body = lines.map((l) => {
-    const padded = l.padEnd(contentWidth);
-    const textColor = role === 'user' ? userFn : agentFn;
-    return color('  \u2502 ') + textColor(padded) + color(' \u2502');
-  }).join('\n');
-  
-  const bottom = color(`  \u2514${"\u2500".repeat(termWidth - 2)}\u2518`);
-  return body.length ? `${top}\n${body}\n${bottom}` : `${top}\n${bottom}`;
+  while (lines.length > 0 && lines[0] === '') lines.shift();
+  while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+
+  const indent = '     ';
+  const body = lines.map((l) => indent + color(l)).join('\n');
+  return body.length ? title + '\n' + body : title;
 }
 
 function highlightLine(line: string): string {
@@ -654,7 +674,7 @@ export function createTurnUI(model: string, sink: TurnSink = stdoutSink): TurnUI
       sink.line(toolBadge(name, detail));
       spinnerCleared = false;
       tokenBuf = ''; // Reset the token buffer for the next round of thinking!
-      sink.spinner('thinking');
+      sink.spinner('thinking:tool');
     },
     finish(result) {
 
@@ -708,6 +728,8 @@ export interface ReplCallbacks {
   prompt?: string;
   /** Initial provider · model shown in the (pinned) input bar. */
   status?: ReplStatus;
+  /** Returns the text of the last assistant response (for /copy). */
+  getLastAssistantText?: () => string;
 }
 
 import { Modal, type ModalPage, type ModalController, type ModalOutcome, type ModalItem } from './modal';
@@ -734,12 +756,14 @@ export function startRepl(cb: ReplCallbacks): {
   openModal: (root: ModalPage, controller: ModalController) => Promise<ModalOutcome>;
   setStatus: (status: ReplStatus) => void;
   writer: TurnSink;
+  copyLastResponse: () => boolean;
 } {
   const out = process.stdout;
   const stdin = process.stdin;
   let status: ReplStatus = cb.status ?? { provider: '', model: '' };
 
   let buf = '';
+  let cursor = 0; // caret position within `buf` (0 = start, buf.length = end)
   let pastedText = '';
   let isPasting = false;
   let pasteBuffer = '';
@@ -751,11 +775,11 @@ export function startRepl(cb: ReplCallbacks): {
   const BUSY_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
   let slashDismissed = false;
   let slashIndex = 0;
-  let ignoreKeypress = false;
-  let insideMouseSequence = false;
 
   let logScrollOffset = 0;
   let pasteExpanded = false;
+  let caretRow = 0;   // 1-based terminal row of the typing (input) line
+  let bufCol1 = 0;    // 1-based terminal column where `buf` begins on that line
   let isSelected = false;
   let cutBuffer = '';
 
@@ -779,7 +803,7 @@ export function startRepl(cb: ReplCallbacks): {
   readline.emitKeypressEvents(stdin);
   if (stdin.isTTY) {
     stdin.setRawMode(true);
-    out.write('\x1b[?1000h\x1b[?1006h\x1b[?2004h'); // enable SGR mouse and bracketed paste mode
+    out.write('\x1b[?2004h'); // enable bracketed paste only (mouse tracking OFF so terminal text selection works)
   }
   stdin.resume();
 
@@ -846,6 +870,8 @@ export function startRepl(cb: ReplCallbacks): {
       displayBuf = ansi.yellow(`(▲ Scrolled Up · ${logScrollOffset} lines) `) + displayBuf;
     }
     const typingLine = youChip + sep + displayBuf;
+    // 1-based column where the editable `buf` begins on the typing line.
+    bufCol1 = stripAnsi(typingLine).length - stripAnsi(buf).length + 1;
 
     // Line 2: Composer Box (Divider + Parameters)
     const divider = ansi.dim('  ' + '─'.repeat(Math.max(10, cols - 6)));
@@ -889,12 +915,12 @@ export function startRepl(cb: ReplCallbacks): {
     const drawString = '\x1b[H' + linesToDraw.map((l) => l + '\x1b[K').join('\n') + '\x1b[J';
     out.write(drawString);
 
-    // Position cursor at the end of typing line inside input field
+    // Position the terminal caret at the editing cursor inside the input field.
     if (!activeModal) {
       const cursorLine = linesToDraw.length - (busy ? 5 : 4);
-      const cleanTypingLine = typingLine.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
-      const cursorCol = cleanTypingLine.length + 1;
-      out.write(`\x1b[${cursorLine};${cursorCol}H\x1b[?25h`);
+      caretRow = cursorLine;
+      const caretCol = bufCol1 + cursor; // 1-based; cursor is 0-based within buf
+      out.write(`\x1b[${cursorLine};${caretCol}H\x1b[?25h`);
     }
     void spinnerTimer;
   };
@@ -911,53 +937,63 @@ export function startRepl(cb: ReplCallbacks): {
   // Turn sink — every write is folded into the scrollback and repainted.
   // ──────────────────────────────────────────────────────────────────────────
 
-  // Spinning-disk animation — half-filled circles at 90° intervals.
-  const SPIN = ['\u25d0', '\u25d3', '\u25d1', '\u25d2']; // ◐◓◑◒
+  // Winged verb spinner — the agent shows an AIOS mark in motion with
+  // per-verb coloured wings + a themed process verb (brewing / channeling / …).
   let spinIdx  = 0;
   let spinText = '';         // full accumulated reasoning text
   let spinTick: NodeJS.Timeout | null = null;
-  let thinkExpanded = true;  // 'T' key toggles this; defaults to true (paragraphs)
+  let spinVerb: AnimVerb = 'brewing';   // current process verb
+  let thinkExpanded = false; // click toggles this; defaults to collapsed (one-liner)
+
+  // Pre-compute winged frames per verb so the redraw loop just indexes them.
+  const WINGED: Record<string, string[]> = {};
+  (Object.keys(VERB_THEMES) as AnimVerb[]).forEach((v) => {
+    WINGED[v] = buildWingedFrames(VERB_THEMES[v].centre, 6, VERB_THEMES[v].wing);
+  });
+
+  const verbColor = (v: AnimVerb): ((t: string) => string) => {
+    const c = VERB_THEMES[v].color;
+    return (t: string) => (ansi as any)[c] ? (ansi as any)[c](t) : t;
+  };
 
   const clearSpin = () => {
     if (spinTick) { clearInterval(spinTick); spinTick = null; }
     spinText = '';
-    thinkExpanded = true;    // reset for next turn
+    spinVerb = 'brewing';
+    thinkExpanded = false;   // reset for next turn
   };
 
-  // Collapsed spinner line: one-liner with last 63 chars of reasoning.
+  // Collapsed spinner line: winged verb glyph + themed verb + rolling preview.
   const mkSpinLine = () => {
-    const frame   = SPIN[spinIdx % SPIN.length]!;
+    const frames  = WINGED[spinVerb] ?? WINGED['brewing'];
+    const frame   = frames[spinIdx % frames.length]!;
     const cleanText = spinText.replace(/<\/?think>/gi, '').trim();
     const flat    = cleanText.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trimStart();
     const preview = flat.length > 63 ? '\u2026' + flat.slice(-61) : flat;
-    const hint    = spinText.length > 10 ? ansi.dim('  [t] expand') : '';
-    return `  ${ansi.model(frame)}  ${ansi.dim(preview)}${hint}`;
+    const verb    = verbColor(spinVerb)(VERB_THEMES[spinVerb].label);
+    const hint    = spinText.length > 10 ? ansi.dim('  [click] expand') : '';
+    return `  ${verbColor(spinVerb)(frame)}  ${verb} ${ansi.dim(preview)}${hint}`;
   };
 
-  // Expanded thinking box: bordered multi-line panel with word-wrapped paragraphs.
+  // Expanded thinking view: winged verb glyph + themed verb header, then the
+  // word-wrapped reasoning indented under it (no box borders — invisible panel).
   const mkThinkBox = (cols: number) => {
     const w = Math.min(cols - 6, 86);
-    const contentWidth = w - 6; // text width inside borders (w - 2 margin spaces - 2 padding spaces - 2 borders)
-    const frame = SPIN[spinIdx % SPIN.length]!;
+    const contentWidth = w - 4;
+    const frames = WINGED[spinVerb] ?? WINGED['brewing'];
+    const frame  = frames[spinIdx % frames.length]!;
     const box: string[] = [];
-    
-    // Top border: ┌─ ◕ thinking ─────── [T] ─┐
-    const titleText = `─ ${frame} thinking `;
-    const controlText = ` [T] ─`;
-    const dashCount = (contentWidth + 2) - titleText.length - controlText.length;
-    
+
     box.push(
-      ansi.dim('  ┌') +
-      ansi.dim(`─ ${ansi.model(frame)} thinking `) +
-      ansi.dim('─'.repeat(Math.max(0, dashCount))) +
-      ansi.dim(controlText) +
-      ansi.dim('┐')
+      '  ' + verbColor(spinVerb)(frame) + '  ' +
+      verbColor(spinVerb)(VERB_THEMES[spinVerb].label) +
+      ansi.dim('  [click] collapse')
     );
 
     const cleanText = spinText.replace(/<\/?think>/gi, '').trim();
     const rawParagraphs = cleanText.split('\n');
     const wrappedLines: string[] = [];
-    
+
     for (const p of rawParagraphs) {
       let l = p.trim();
       if (!l) continue;
@@ -973,11 +1009,8 @@ export function startRepl(cb: ReplCallbacks): {
     // Show up to 15 lines of thoughts (scrolling view)
     const showLines = wrappedLines.slice(-15);
     for (const line of showLines) {
-      const padded = line.padEnd(contentWidth, ' ');
-      box.push(ansi.dim('  │ ') + ansi.gray(padded) + ansi.dim(' │'));
+      box.push(ansi.gray('     ' + line));
     }
-    
-    box.push(ansi.dim('  └' + '─'.repeat(contentWidth + 2) + '┘'));
     return box;
   };
 
@@ -1058,16 +1091,29 @@ export function startRepl(cb: ReplCallbacks): {
         redraw();
         return;
       }
+      // Map the incoming status text to a themed process verb:
+      //   'thinking'        -> brewing   (planning / reasoning)
+      //   'thinking:tool'   -> scrupuling (verifying / scrubbing)
+      //   long token buffer -> channeling (streaming the response)
+      if (s === 'thinking:tool') {
+        spinVerb = 'scrupuling';
+        spinText = '';
+      } else if (s === 'thinking') {
+        spinVerb = 'brewing';
+        spinText = '';
+      } else {
+        spinVerb = 'channeling';
+        spinText = s;
+      }
       // Update text.  Only START a new interval if one isn’t already running.
       // This prevents the animation frame from resetting on every token delta.
-      spinText = s;
       if (!spinTick) {
         spinIdx  = 0;
         spinTick = setInterval(() => {
-          spinIdx  = (spinIdx + 1) % SPIN.length;
+          spinIdx  = (spinIdx + 1) % (WINGED[spinVerb]?.length ?? 6);
           liveTail = mkSpinLine();
           redraw();
-        }, 100);
+        }, 90);
       }
       liveTail = mkSpinLine();
       redraw();
@@ -1086,6 +1132,7 @@ export function startRepl(cb: ReplCallbacks): {
     history.push(line);
     histIdx = -1;
     buf = '';
+    cursor = 0;
     pastedText = '';
     slashDismissed = false;
     slashIndex = 0;
@@ -1132,7 +1179,6 @@ export function startRepl(cb: ReplCallbacks): {
   };
 
   const onKey = (_ch: string | undefined, key: any) => {
-    if (ignoreKeypress) return;
     if (isPasting) return;
     if (Date.now() - lastPasteTime < 150) return;
     if (secretPromptActive) return; // a hidden secret prompt owns the input
@@ -1142,7 +1188,8 @@ export function startRepl(cb: ReplCallbacks): {
       readClipboard((text) => {
         if (text) {
           const cleanedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-          buf += cleanedText;
+          buf = buf.slice(0, cursor) + cleanedText + buf.slice(cursor);
+          cursor += cleanedText.length;
           recompute();
           redraw();
         }
@@ -1157,15 +1204,35 @@ export function startRepl(cb: ReplCallbacks): {
       return;
     }
 
+    // Drop stray control/escape bytes that readline couldn't parse into a
+    // named key. In raw mode these arrive as `keypress` events for the raw
+    // bytes of mouse reports / escape sequences and would otherwise leak
+    // literal control characters into the input buffer. Named keys (arrows,
+    // Enter, Tab, Space, Ctrl+*) all carry `key`, so they are unaffected.
+    if (!key && _ch) {
+      const code = _ch.charCodeAt(0);
+      if (code < 0x20 || _ch === '\x1b') return;
+    }
+
+    // Cursor movement — works while editing, including when a turn is busy.
+    if (!isSelected && key && !key.ctrl && !key.meta) {
+      if (key.name === 'left')  { cursor = Math.max(0, cursor - 1); redraw(); return; }
+      if (key.name === 'right') { cursor = Math.min(buf.length, cursor + 1); redraw(); return; }
+      if (key.name === 'home')  { cursor = 0; redraw(); return; }
+      if (key.name === 'end')   { cursor = buf.length; redraw(); return; }
+    }
+
     // Selection management
     if (key && key.ctrl && key.name === 'a') {
       isSelected = true;
+      cursor = buf.length;
       redraw();
       return;
     }
     if (key && key.ctrl && key.name === 'x') {
       cutBuffer = buf;
       buf = '';
+      cursor = 0;
       isSelected = false;
       recompute();
       redraw();
@@ -1185,7 +1252,7 @@ export function startRepl(cb: ReplCallbacks): {
         return;
       }
       if (key && !key.ctrl && !key.meta && _ch && _ch >= ' ') {
-        buf = _ch;
+        buf = _ch; cursor = buf.length;
         isSelected = false;
         recompute();
         redraw();
@@ -1201,8 +1268,20 @@ export function startRepl(cb: ReplCallbacks): {
         }
         return;
       }
+      // Thinking panel toggles on mouse click (handled in onData via ?1000
+      // click reporting — drag/highlight is NOT captured, so native terminal
+      // text selection still works). No key toggle needed.
       if (!key) {
-        if (_ch) buf += _ch;
+        // Only accept genuine printable characters. In raw mode, unparsed
+        // escape sequences (arrow keys, focus events, function-key reports,
+        // etc.) arrive here as `_ch` with no `key` name — blindly appending
+        // them leaks literal control bytes (e.g. "u2#u2") into the input
+        // buffer. Mirror the guard used above: drop anything below 0x20 or
+        // the bare ESC byte.
+        if (_ch && _ch.charCodeAt(0) >= 0x20 && _ch !== '\x1b') {
+          buf = buf.slice(0, cursor) + _ch + buf.slice(cursor);
+          cursor += _ch.length;
+        }
         redraw();
         return;
       }
@@ -1212,7 +1291,7 @@ export function startRepl(cb: ReplCallbacks): {
       }
       if (key.name === 'return' || key.name === 'enter' || _ch === '\r' || _ch === '\n') {
         const line = buf;
-        buf = '';
+        buf = ''; cursor = 0;
         if (line.trim()) {
           queue.push(line);
           appendLine(ansi.gray(`  [Queued] ${line}`));
@@ -1221,18 +1300,23 @@ export function startRepl(cb: ReplCallbacks): {
         }
         return;
       }
-      if (key.name === 'backspace' || key.name === 'delete' || _ch === '\x7f' || _ch === '\b') {
-        buf = buf.slice(0, -1);
+      if (key.name === 'backspace' || _ch === '\x7f' || _ch === '\b') {
+        if (cursor > 0) { buf = buf.slice(0, cursor - 1) + buf.slice(cursor); cursor -= 1; }
+        redraw();
+        return;
+      }
+      if (key.name === 'delete') {
+        if (cursor < buf.length) { buf = buf.slice(0, cursor) + buf.slice(cursor + 1); }
         redraw();
         return;
       }
       if (key.name === 'space') {
-        buf += ' ';
+        buf = buf.slice(0, cursor) + ' ' + buf.slice(cursor); cursor += 1;
         redraw();
         return;
       }
       if (!key.ctrl && !key.meta && _ch && _ch >= ' ') {
-        buf += _ch;
+        buf = buf.slice(0, cursor) + _ch + buf.slice(cursor); cursor += _ch.length;
         redraw();
         return;
       }
@@ -1240,7 +1324,15 @@ export function startRepl(cb: ReplCallbacks): {
     }
 
     if (!key) {
-      if (_ch) buf += _ch;
+      // Only accept genuine printable characters. In raw mode, unparsed
+      // escape sequences (arrow keys, focus events, function-key reports,
+      // etc.) arrive here as `_ch` with no `key` name — blindly appending
+      // them leaks literal control bytes (e.g. "u2#u2") into the input
+      // buffer. Drop anything below 0x20 or the bare ESC byte.
+      if (_ch && _ch.charCodeAt(0) >= 0x20 && _ch !== '\x1b') {
+        buf = buf.slice(0, cursor) + _ch + buf.slice(cursor);
+        cursor += _ch.length;
+      }
       recompute();
       redraw();
       return;
@@ -1284,6 +1376,7 @@ export function startRepl(cb: ReplCallbacks): {
       } else if (history.length) {
         histIdx = histIdx < 0 ? history.length - 1 : Math.max(0, histIdx - 1);
         buf = history[histIdx];
+        cursor = buf.length;
         slashDismissed = false;
       }
     } else if (key.name === 'down') {
@@ -1294,32 +1387,50 @@ export function startRepl(cb: ReplCallbacks): {
         if (histIdx >= history.length) {
           histIdx = -1;
           buf = '';
+          cursor = 0;
         } else {
           buf = history[histIdx];
+          cursor = buf.length;
         }
         slashDismissed = false;
       }
     } else if (key.name === 'escape') {
       if (show) slashDismissed = true;
-    } else if (key.name === 'backspace' || key.name === 'delete') {
-      if (buf.length > 0) {
-        buf = buf.slice(0, -1);
+    } else if (key.name === 'backspace' || _ch === '\x7f' || _ch === '\b') {
+      if (cursor > 0) {
+        buf = buf.slice(0, cursor - 1) + buf.slice(cursor);
+        cursor -= 1;
       } else if (pastedText.length > 0) {
         pastedText = ''; // clear entire pasted block
       }
       slashDismissed = false;
       slashIndex = 0;
       recompute();
+    } else if (key.name === 'delete') {
+      if (cursor < buf.length) { buf = buf.slice(0, cursor) + buf.slice(cursor + 1); }
+      slashDismissed = false;
+      slashIndex = 0;
+      recompute();
     } else if (key.name === 'space') {
-      buf += ' ';
+      buf = buf.slice(0, cursor) + ' ' + buf.slice(cursor); cursor += 1;
       slashDismissed = false;
       slashIndex = 0;
       recompute();
     } else if (!key.ctrl && !key.meta && _ch && _ch >= ' ') {
-      buf += _ch;
+      buf = buf.slice(0, cursor) + _ch + buf.slice(cursor); cursor += _ch.length;
       slashDismissed = false;
       slashIndex = 0;
       recompute();
+    } else if (key && key.name === 'pageup') {
+      // Scroll the scrollback up (replaces the old mouse-wheel scroll).
+      logScrollOffset = Math.min(log.length, logScrollOffset + 1);
+      redraw();
+      return;
+    } else if (key && key.name === 'pagedown') {
+      // Scroll the scrollback down.
+      logScrollOffset = Math.max(0, logScrollOffset - 1);
+      redraw();
+      return;
     }
     redraw();
   };
@@ -1333,50 +1444,33 @@ export function startRepl(cb: ReplCallbacks): {
     if (secretPromptActive) return; // Completely ignore if secret prompt is active!
     let str = dataBuf.toString();
 
-    // Check for SGR mouse reporting sequence start
-    if (str.includes('\x1b[<')) {
-      insideMouseSequence = true;
-    }
-
-    if (insideMouseSequence) {
-      ignoreKeypress = true;
-      
-      // Look for button click matches
-      const match = str.match(/\x1b\[<(\d+);(\d+);(\d+)([Mm])/);
-      if (match) {
-        const button = parseInt(match[1], 10);
-        const isRelease = match[4] === 'm';
-        if (!isRelease && button === 0) {
-          if (busy && spinTick) {
-            thinkExpanded = !thinkExpanded;
-            liveTail = thinkExpanded ? '' : mkSpinLine();
-            redraw();
-          }
-        } else if (button === 64) {
-          if (activeModal) {
-            activeModal.handleScroll(-1);
-          } else {
-            logScrollOffset = Math.min(log.length, logScrollOffset + 1);
-            redraw();
-          }
-        } else if (button === 65) {
-          if (activeModal) {
-            activeModal.handleScroll(1);
-          } else {
-            logScrollOffset = Math.max(0, logScrollOffset - 1);
-            redraw();
-          }
+    // --- Mouse click handling (?1000 click reporting) -------------------
+    // Toggle the thinking panel when the user clicks anywhere in the
+    // terminal. Drag/highlight is NOT reported by ?1000, so native text
+    // selection keeps working.
+    while (str.includes('\x1b[M')) {
+      const m = str.indexOf('\x1b[M');
+      const b = str.charCodeAt(m + 3);
+      // 0x20 = left button press (no drag tracking in ?1000 mode)
+      if (b === 0x20 || b === 0x00) {
+        // Decode the 1-based terminal coordinates from the 3-byte report.
+        const x = str.charCodeAt(m + 4) - 32;
+        const y = str.charCodeAt(m + 5) - 32;
+        if (y === caretRow && x >= bufCol1) {
+          // Click landed on the input line → place the caret between letters.
+          cursor = Math.max(0, Math.min(buf.length, x - bufCol1));
+          redraw();
+        } else if (busy && spinTick) {
+          // Click elsewhere → toggle the live thinking panel (when running).
+          thinkExpanded = !thinkExpanded;
+          liveTail = thinkExpanded ? '' : mkSpinLine();
+          redraw();
         }
       }
-
-      // Check if mouse sequence ends in this chunk
-      if (str.endsWith('M') || str.endsWith('m') || str.includes('M') || str.includes('m')) {
-        insideMouseSequence = false;
-      }
-      return; // prevent keypress/data handling
+      // consume the 3-byte mouse report (ESC [ M b x y)
+      str = str.slice(m + 6);
     }
 
-    ignoreKeypress = false;
 
     // Check for Bracketed Paste Start
     if (str.includes('\x1b[200~')) {
@@ -1402,7 +1496,8 @@ export function startRepl(cb: ReplCallbacks): {
             pastedText = pasteBuffer;
           }
         } else {
-          buf += pasteBuffer;
+          buf = buf.slice(0, cursor) + pasteBuffer + buf.slice(cursor);
+          cursor += pasteBuffer.length;
         }
         pasteBuffer = '';
         redraw();
@@ -1414,7 +1509,8 @@ export function startRepl(cb: ReplCallbacks): {
   };
 
   const quit = () => {
-    out.write('\x1b[?1000l\x1b[?1006l\x1b[?2004l'); // disable mouse and bracketed paste mode
+    out.write('\x1b[?2004l'); // disable bracketed paste mode
+    out.write('\x1b[?1000l'); // disable click reporting (restore native selection)
     stdin.removeListener('keypress', onKey);
     stdin.removeListener('data', onData);
     if (stdin.isTTY) stdin.setRawMode(false);
@@ -1425,6 +1521,10 @@ export function startRepl(cb: ReplCallbacks): {
 
   stdin.on('keypress', onKey);
   stdin.prependListener('data', onData);
+  // Enable mouse CLICK reporting only (?1000). This reports button press/release
+  // but NOT drag/highlight, so the user can still select+copy terminal text
+  // while being able to click to expand/collapse the thinking panel.
+  out.write('\x1b[?1000h');
 
   /**
    * Open the browser-style multi-page modal. Resolves with the final
@@ -1446,7 +1546,14 @@ export function startRepl(cb: ReplCallbacks): {
   recompute();
   redraw();
 
-  return { close: quit, openModal, setStatus: (s: ReplStatus) => { status = s; redraw(); }, writer };
+  const copyLastResponse = (): boolean => {
+    const text = cb.getLastAssistantText ? cb.getLastAssistantText() : '';
+    if (!text) return false;
+    writeClipboard(text);
+    return true;
+  };
+
+  return { close: quit, openModal, setStatus: (s: ReplStatus) => { status = s; redraw(); }, writer, copyLastResponse };
 }
 
 /**
@@ -1462,7 +1569,7 @@ export function promptSecret(promptText: string): Promise<string> {
     const out = process.stdout;
     const wasRaw = !!(stdin.isTTY && (stdin as any).isRawMode?.());
     if (stdin.isTTY) stdin.setRawMode(false);
-    out.write('\x1b[?1000l\x1b[?1006l'); // suspend mouse reporting temporarily
+    // mouse reporting is disabled in the REPL, so nothing to suspend
     out.write('\n' + promptText + ' ');
 
     let value = '';
@@ -1497,7 +1604,7 @@ if (ch === '\u0003' || ch === '\u0004' || ch === '\u001b') {
       stdin.removeListener('data', onData);
       secretPromptActive = false;
       if (stdin.isTTY) stdin.setRawMode(wasRaw);
-      if (wasRaw) out.write('\x1b[?1000h\x1b[?1006h'); // restore mouse reporting
+      // mouse reporting stays disabled; native terminal selection works
     };
     stdin.on('data', onData);
   });
@@ -1542,6 +1649,8 @@ export function printHelp(): void {
       h('  REPL HOTKEYS'),
       kv('Enter',                'send message'),
       kv('↑ / ↓',                'recall history  |  move picker selection'),
+      kv('← / →',                'move caret within the input  (Home / End jump to start / end)'),
+      kv('click',                'place caret in the input  |  expand / collapse the live thinking panel'),
       kv('/',                    'open slash menu  (↑↓ navigate · Enter/Tab accept · Esc close)'),
       kv('Ctrl+C / Ctrl+D',      'quit'),
       '',
