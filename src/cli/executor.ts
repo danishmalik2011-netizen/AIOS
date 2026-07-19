@@ -115,6 +115,22 @@ export function createExecutor(opts: ExecutorOptions) {
           .join('\n')}`;
       }
 
+      case 'search_net': {
+        const results = await t.searchNet(str(args.query), {
+          limit: typeof args.limit === 'number' ? args.limit : undefined,
+          engine: (str(args.engine, 'ddg') as 'ddg' | 'url') || 'ddg',
+          url: args.url ? str(args.url) : undefined,
+          token: args.token ? str(args.token) : undefined,
+          timeout: typeof args.timeout === 'number' ? args.timeout : undefined,
+        });
+        if (!results.length) {
+          return `No web results found for "${str(args.query)}" (engine: ${str(args.engine, 'ddg')}).`;
+        }
+        return `Web search for "${str(args.query)}" — ${results.length} result(s):\n${results
+          .map((r, i) => `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.snippet}`)
+          .join('\n')}`;
+      }
+
       case 'list_dir': {
         // Compact indented tree — never dumps raw JSON that fills the context.
         const listRoot = resolve(str(args.path || args.directory || ''));

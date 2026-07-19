@@ -31,7 +31,7 @@ export interface CatalogProvider {
 export const PROVIDER_CATALOG: CatalogProvider[] = [
   // ---- Flagship / most popular ----
   { id: 'openai',     name: 'OpenAI',              kind: 'openai',           baseUrl: 'https://api.openai.com/v1',                                            defaultModels: ['gpt-4o', 'gpt-4o-mini', 'o1-preview', 'o3-mini'],                                             tier: 'flagship',   costTier: 'high',   popularity: 10, tags: ['coding', 'reasoning', 'multimodal'] },
-  { id: 'anthropic',  name: 'Anthropic',            kind: 'anthropic',        baseUrl: 'https://api.anthropic.com/v1',                                         defaultModels: ['claude-opus-4-8', 'claude-sonnet-5', 'claude-haiku-4-5-20251001'],                          tier: 'flagship',   costTier: 'high',   popularity: 10, tags: ['coding', 'reasoning', 'long-context'] },
+  { id: 'anthropic',  name: 'Anthropic',            kind: 'anthropic',        baseUrl: 'https://api.anthropic.com/v1',                                         defaultModels: ['claude-opus-4-20250514', 'claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022'],  tier: 'flagship',   costTier: 'high',   popularity: 10, tags: ['coding', 'reasoning', 'long-context'] },
   { id: 'google',     name: 'Google AI (Gemini)',    kind: 'openai-compatible',baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',              defaultModels: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash'],                                  tier: 'flagship',   costTier: 'medium', popularity: 9,  tags: ['coding', 'reasoning', 'multimodal', 'long-context'] },
   { id: 'deepseek',   name: 'DeepSeek',             kind: 'openai-compatible',baseUrl: 'https://api.deepseek.com/v1',                                          defaultModels: ['deepseek-chat', 'deepseek-reasoner'],                                                       tier: 'flagship',   costTier: 'low',    popularity: 9,  tags: ['coding', 'reasoning'] },
   { id: 'mistral',    name: 'Mistral (La Plateforme)',kind:'openai-compatible',baseUrl: 'https://api.mistral.ai/v1',                                            defaultModels: ['mistral-large-latest', 'mistral-small-latest', 'codestral-latest'],                         tier: 'flagship',   costTier: 'medium', popularity: 8,  tags: ['coding', 'fast'] },
@@ -42,7 +42,7 @@ export const PROVIDER_CATALOG: CatalogProvider[] = [
   { id: 'openrouter', name: 'OpenRouter',            kind: 'openai-compatible',baseUrl: 'https://openrouter.ai/api/v1',                                         defaultModels: ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet', 'meta-llama/llama-3.1-70b-instruct'],      tier: 'aggregator', costTier: 'medium', popularity: 10, tags: ['aggregator', 'free'] },
 
   // ---- New / trending providers ----
-  { id: 'kilo',       name: 'Kilo',                 kind: 'openai-compatible',baseUrl: 'https://api.kilo.ai/api/gateway',                                        defaultModels: ['claude-sonnet-5', 'gpt-4o', 'deepseek-v3'],                                                 tier: 'aggregator', costTier: 'medium', popularity: 7,  tags: ['aggregator', 'coding'] },
+  { id: 'kilo',       name: 'Kilo',                 kind: 'openai-compatible',baseUrl: 'https://api.kilo.ai/api/gateway',                                        defaultModels: ['claude-sonnet-4-20250514', 'gpt-4o', 'deepseek-v3'],                                         tier: 'aggregator', costTier: 'medium', popularity: 7,  tags: ['aggregator', 'coding'] },
   { id: 'opencode',   name: 'OpenCode',             kind: 'openai-compatible',baseUrl: 'https://api.opencode.ai/v1',                                           defaultModels: ['opencode-1', 'deepseek-coder-v3'],                                                          tier: 'coding',     costTier: 'low',    popularity: 7,  tags: ['coding', 'open-source'] },
   { id: 'chutes',     name: 'Chutes AI',            kind: 'openai-compatible',baseUrl: 'https://llm.chutes.ai/v1',                                             defaultModels: ['deepseek-ai/DeepSeek-V3-0324', 'unsloth/Llama-3.3-70B-Instruct'],                          tier: 'free',       costTier: 'free',   popularity: 8,  tags: ['free', 'open-source'] },
   { id: 'sambanova',  name: 'SambaNova Cloud',       kind: 'openai-compatible',baseUrl: 'https://api.sambanova.ai/v1',                                          defaultModels: ['Meta-Llama-3.3-70B-Instruct', 'DeepSeek-R1'],                                               tier: 'fast',       costTier: 'low',    popularity: 7,  tags: ['fast', 'reasoning'] },
@@ -54,7 +54,7 @@ export const PROVIDER_CATALOG: CatalogProvider[] = [
   { id: 'fireworks', name: 'Fireworks AI', kind: 'openai-compatible', baseUrl: 'https://api.fireworks.ai/inference/v1', defaultModels: ['accounts/fireworks/models/llama-v3p3-70b-instruct', 'accounts/fireworks/models/mixtral-8x22b-instruct'] },
   { id: 'perplexity', name: 'Perplexity', kind: 'openai-compatible', baseUrl: 'https://api.perplexity.ai', defaultModels: ['sonar', 'sonar-pro', 'sonar-reasoning'] },
   { id: 'ai21', name: 'AI21 (Jamba)', kind: 'openai-compatible', baseUrl: 'https://api.ai21.com/studio/v1', defaultModels: ['jamba-1.5-large', 'jamba-1.5-mini'] },
-  { id: 'anov', name: 'Anthropic Vertex', kind: 'openai-compatible', baseUrl: 'https://ai.anthropic.com/v1', defaultModels: ['claude-opus-4-8', 'claude-sonnet-5'] },
+  { id: 'anov', name: 'Anthropic Vertex', kind: 'openai-compatible', baseUrl: 'https://ai.anthropic.com/v1', defaultModels: ['claude-opus-4-20250514', 'claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022'] },
   { id: 'scaleway', name: 'Scaleway (Inference)', kind: 'openai-compatible', baseUrl: 'https://inference-api.scaleway.ai/v1', defaultModels: ['llama-3.3-70b-instruct', 'deepseek-r1-distill-llama-70b'] },
   { id: 'nebius', name: 'Nebius AI', kind: 'openai-compatible', baseUrl: 'https://api.nebius.ai/v1', defaultModels: ['meta-llama/Llama-3.3-70B-Instruct', 'deepseek-ai/DeepSeek-V3'] },
   { id: 'ovh', name: 'OVHcloud AI', kind: 'openai-compatible', baseUrl: 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1', defaultModels: ['DeepSeek-R1-Distill-Llama-70B', 'Meta-Llama-3.3-70B-Instruct'] },
@@ -152,6 +152,14 @@ export const PROVIDER_CATALOG: CatalogProvider[] = [
   { id: 'samsung-gauss', name: 'Samsung Gauss', kind: 'openai-compatible', baseUrl: 'https://api.gauss.samsung.com/v1', defaultModels: ['gauss-1'] },
   { id: 'rakuten-ai', name: 'Rakuten AI', kind: 'openai-compatible', baseUrl: 'https://api.rakuten.ai/v1', defaultModels: ['rakuten-ai-70b', 'rakuten-ai-7b'] },
   { id: 'line-ai', name: 'LINE AI', kind: 'openai-compatible', baseUrl: 'https://api.line.ai/v1', defaultModels: ['line-llm'] },
+
+  // ---- LLM multiplexers / aggregators ----
+  // ZenMux is an OpenAI-compatible LLM multiplexer/gateway. The base URL below
+  // is a placeholder — override it at runtime with AIOS_BASE_URL_ZENMUX
+  // (e.g. `export AIOS_BASE_URL_ZENMUX=https://your.zenmux.host/v1`) and supply
+  // a key with AIOS_API_KEY_ZENMUX. The live /models list replaces
+  // `defaultModels` once a key is configured.
+  { id: 'zenmux', name: 'ZenMux', kind: 'openai-compatible', baseUrl: 'https://api.zenmux.ai/v1', defaultModels: ['zenmux-default'], tags: ['aggregator', 'multiplexer', 'openai-compatible'] },
 
   // ---- More regional LLM hosts ----
   { id: 'yandexgpt', name: 'YandexGPT', kind: 'openai-compatible', baseUrl: 'https://api.yandex.cloud/v1', defaultModels: ['yandexgpt', 'yandexgpt-lite'] },

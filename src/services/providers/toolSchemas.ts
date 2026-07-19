@@ -105,6 +105,35 @@ export const AGENT_TOOLS: ToolDefinition[] = [
     },
   },
   {
+    name: 'search_net',
+    description:
+      'Perform a LIVE WEB search (the network counterpart to search_code, which only searches local files). ' +
+      'Returns a compact list of results — title, URL, and snippet — for the given query. ' +
+      'Default backend is DuckDuckGo\'s keyless Instant Answer API (no API key required). ' +
+      'Use this to look up current documentation, library APIs, error messages, or anything not in the local codebase. ' +
+      'For a self-hosted or custom search endpoint, set engine to "url" and pass a `url` (or rely on the AIOS_SEARCH_API env var).',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'The search query / question.' },
+        limit: { type: 'number', description: 'Max results to return (1–20). Defaults to 8.' },
+        engine: {
+          type: 'string',
+          description: "Search backend: 'ddg' (default, keyless) or 'url' (custom endpoint).",
+          enum: ['ddg', 'url'],
+        },
+        url: {
+          type: 'string',
+          description:
+            "When engine='url', the endpoint to GET. Use '{q}' as a placeholder for the encoded query (e.g. 'https://my-proxy.example/search?q={q}'). Falls back to the AIOS_SEARCH_API env var.",
+        },
+        token: { type: 'string', description: "Optional bearer token sent when engine='url'." },
+        timeout: { type: 'number', description: 'Per-request timeout in seconds (1–60). Defaults to 15.' },
+      },
+      required: ['query'],
+    },
+  },
+  {
     name: 'run_command',
     description: 'Run a shell command in a new terminal tab (e.g. run tests, install deps, build).',
     parameters: {

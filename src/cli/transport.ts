@@ -366,3 +366,135 @@ export async function gitCommit(repo: string, message: string): Promise<string> 
   const log = await git.log({ maxCount: 1 });
   return res.commit || log.latest?.hash || '';
 }
+
+/* ---- search_net -------------------------------------------------- */
+
+export interface NetSearchResult {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+export interface NetSearchOptions {
+  /** Max number of results to return. Clamped to 1–20. */
+  limit?: number;
+  /**
+   * Search backend.
+   *  - 'ddg'   (default): DuckDuckGo Instant Answer API — keyless, no auth.
+   *  - 'url'   : treat `query` as a fully-formed GET URL that returns JSON
+   *              with a `results` array (or any object the caller parses).
+   *              Useful for a self-hosted search proxy or a custom endpoint.
+   */
+  engine?: 'ddg' | 'url';
+  /** When engine='url', the endpoint to GET. `{q}` is replaced with the
+   *  encoded query. Ignored for the default 'ddg' engine. */
+  url?: string;
+  /** Optional bearer token sent as `Authorization: Bearer <token>` when
+   *  engine='url' and a token is supplied. */
+  token?: string;
+  /** Per-request timeout in seconds. Defaults to 15. */
+  timeout?: number;
+}
+
+/**
+ * Perform a live web search and return a compact list of results.
+ *
+ * This is the network counterpart to `search` (which only searches local
+ * files). It is dependency-free — it uses the global `fetch` available in
+ * Node 18+. The default backend is DuckDuckGo's keyless Instant Answer API;
+ * set `AIOS_SEARCH_API` in the environment to point `engine:'url'` at a
+ * custom endpoint without hard-coding it in tool calls.
+ */
+export async function searchNet(
+  query: string,
+  opts: NetSearchOptions = {},
+): Promise<NetSearchResult[]> {
+  const q = (query || '').trim();
+  if (!q) return [];
+  const limit = Math.max(1, Math.min(opts.limit ?? 8, 20));
+  const engine = opts.engine ?? 'ddg';
+  const timeoutMs = Math.min(Math.max(1, opts.timeout ?? 15), 60) * 1000;
+
+  const withTimeout = async (p: Promise<Response>): Promise<Response> => {
+    const ctrl = new AbortController();
+    const id = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      return await p;
+    } finally {
+      clearTimeout(id);
+    }
+  };
+
+  try {
+    if (engine === 'url') {
+      const endpoint =
+        opts.url || process.env.AIOS_SEARCH_API || '';
+      if (!endpoint) {
+        return [];
+      }
+      const target = endpoint.includes('{q}')
+        ? endpoint.replace('{q}', encodeURIComponent(q))
+        : `${endpoint}${endpoint.includes('?') ? '&' : '?'}q=${encodeURIComponent(q)}`;
+      const headers: Record<string, string> = { accept: 'application/json' };
+      if (opts.token) headers.authorization = `Bearer ${opts.token}`;
+      const res = await withTimeout(
+        fetch(target, { headers, signal: (new AbortController()).signal }),
+      );
+      if (!res.ok) return [];
+      const data = (await res.json().catch(() => null)) as any;
+      const arr: any[] = Array.isArray(data)
+        ? data
+        : (data?.results ?? data?.items ?? data?.webPages?.value ?? []);
+      return arr.slice(0, limit).map((r) => ({
+        title: String(r.title ?? r.name ?? '(untitled)'),
+        url: String(r.url ?? r.link ?? r.href ?? ''),
+        snippet: String(r.snippet ?? r.description ?? r.body ?? ''),
+      }));
+    }
+
+    // Default: DuckDuckGo Instant Answer API (keyless).
+    const ddg = `https://api.duckduckgo.com/?q=${encodeURIComponent(q)}&format=json&no_html=1&skip_disambig=1`;
+    const res = await withTimeout(fetch(ddg));
+    if (!res.ok) return [];
+    const data = (await res.json().catch(() => null)) as any;
+    const out: NetSearchResult[] = [];
+
+    // Direct answer (AbstractText) — surfaced as the top result.
+    if (data?.AbstractText) {
+      out.push({
+        title: data.Heading || q,
+        url: data.AbstractURL || '',
+        snippet: data.AbstractText,
+      });
+    }
+    // RelatedTopics — the closest thing DDG's keyless API gives to a result list.
+    const topics: any[] = Array.isArray(data?.RelatedTopics) ? data.RelatedTopics : [];
+    for (const t of topics) {
+      if (out.length >= limit) break;
+      // RelatedTopics may be nested under a "Topics" grouping.
+      if (Array.isArray(t?.Topics)) {
+        for (const sub of t.Topics) {
+          if (out.length >= limit) break;
+          if (sub?.Text) {
+            out.push({
+              title: (sub.Text.split(' — ')[0] || q).slice(0, 120),
+              url: sub.FirstURL || '',
+              snippet: sub.Text || '',
+            });
+          }
+        }
+        continue;
+      }
+      if (t?.Text) {
+        out.push({
+          title: (t.Text.split(' — ')[0] || q).slice(0, 120),
+          url: t.FirstURL || '',
+          snippet: t.Text || '',
+        });
+      }
+    }
+    return out.slice(0, limit);
+  } catch {
+    return [];
+  }
+}
