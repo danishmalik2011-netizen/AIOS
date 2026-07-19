@@ -118,13 +118,19 @@ export function createExecutor(opts: ExecutorOptions) {
       case 'search_net': {
         const results = await t.searchNet(str(args.query), {
           limit: typeof args.limit === 'number' ? args.limit : undefined,
-          engine: (str(args.engine, 'ddg') as 'ddg' | 'url') || 'ddg',
+          engine: (str(args.engine, 'ddg') as 'ddg' | 'bing' | 'url') || 'ddg',
           url: args.url ? str(args.url) : undefined,
           token: args.token ? str(args.token) : undefined,
           timeout: typeof args.timeout === 'number' ? args.timeout : undefined,
         });
         if (!results.length) {
-          return `No web results found for "${str(args.query)}" (engine: ${str(args.engine, 'ddg')}).`;
+          const eng = str(args.engine, 'ddg');
+          return (
+            `No web results found for "${str(args.query)}" (engine: ${eng}).\n` +
+            `This can happen if the network/proxy blocks the search endpoint ` +
+            `(e.g. DuckDuckGo/Bing returning 403 or an empty page). Try engine:'bing', ` +
+            `a custom engine:'url' endpoint, or run on a machine with unrestricted internet.`
+          );
         }
         return `Web search for "${str(args.query)}" — ${results.length} result(s):\n${results
           .map((r, i) => `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.snippet}`)

@@ -385,7 +385,7 @@ export interface NetSearchOptions {
    *              with a `results` array (or any object the caller parses).
    *              Useful for a self-hosted search proxy or a custom endpoint.
    */
-  engine?: 'ddg' | 'url';
+  engine?: 'ddg' | 'bing' | 'url';
   /** When engine='url', the endpoint to GET. `{q}` is replaced with the
    *  encoded query. Ignored for the default 'ddg' engine. */
   url?: string;
@@ -401,9 +401,18 @@ export interface NetSearchOptions {
  *
  * This is the network counterpart to `search` (which only searches local
  * files). It is dependency-free — it uses the global `fetch` available in
- * Node 18+. The default backend is DuckDuckGo's keyless Instant Answer API;
- * set `AIOS_SEARCH_API` in the environment to point `engine:'url'` at a
- * custom endpoint without hard-coding it in tool calls.
+ * Node 18+. Backends:
+ *   - 'ddg'  (default): DuckDuckGo HTML results (real results), with the
+ *     keyless Instant Answer API as a fallback when the HTML endpoint is
+ *     blocked. No API key required.
+ *   - 'bing': Bing HTML results (keyless; may return [] if Bing serves a
+ *     bot-challenge page to scripted requests).
+ *   - 'url' : a custom endpoint. Set `AIOS_SEARCH_API` in the environment to
+ *     point it at an endpoint without hard-coding it in tool calls.
+ *
+ * Note: some networks/proxies block these endpoints (e.g. returning 403 or an
+ * empty page). In that case the function returns [] and the caller should
+ * surface a "no results / possibly blocked" message.
  */
 export async function searchNet(
   query: string,
@@ -415,6 +424,10 @@ export async function searchNet(
   const engine = opts.engine ?? 'ddg';
   const timeoutMs = Math.min(Math.max(1, opts.timeout ?? 15), 60) * 1000;
 
+  const UA =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+    '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
   const withTimeout = async (p: Promise<Response>): Promise<Response> => {
     const ctrl = new AbortController();
     const id = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -425,21 +438,28 @@ export async function searchNet(
     }
   };
 
+  // Strip HTML tags and decode the few entities we care about.
+  const clean = (s: string): string =>
+    (s || '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/\s+/g, ' ')
+      .trim();
+
   try {
     if (engine === 'url') {
-      const endpoint =
-        opts.url || process.env.AIOS_SEARCH_API || '';
-      if (!endpoint) {
-        return [];
-      }
+      const endpoint = opts.url || process.env.AIOS_SEARCH_API || '';
+      if (!endpoint) return [];
       const target = endpoint.includes('{q}')
         ? endpoint.replace('{q}', encodeURIComponent(q))
         : `${endpoint}${endpoint.includes('?') ? '&' : '?'}q=${encodeURIComponent(q)}`;
       const headers: Record<string, string> = { accept: 'application/json' };
       if (opts.token) headers.authorization = `Bearer ${opts.token}`;
-      const res = await withTimeout(
-        fetch(target, { headers, signal: (new AbortController()).signal }),
-      );
+      const res = await withTimeout(fetch(target, { headers }));
       if (!res.ok) return [];
       const data = (await res.json().catch(() => null)) as any;
       const arr: any[] = Array.isArray(data)
@@ -452,14 +472,76 @@ export async function searchNet(
       }));
     }
 
-    // Default: DuckDuckGo Instant Answer API (keyless).
+    if (engine === 'bing') {
+      // Bing HTML (keyless). Note: Bing sometimes serves a bot-challenge page
+      // to scripted requests, in which case this returns [].
+      const res = await withTimeout(
+        fetch(`https://www.bing.com/search?q=${encodeURIComponent(q)}`, {
+          headers: { 'User-Agent': UA, accept: 'text/html' },
+        }),
+      );
+      if (!res.ok) return [];
+      const html = await res.text();
+      const out: NetSearchResult[] = [];
+      const re = /<li class="b_algo"[^>]*>.*?<h2>(.*?)<\/h2>.*?<p[^>]*>(.*?)<\/p>/gs;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(html)) && out.length < limit) {
+        const title = clean(m[1]);
+        const snippet = clean(m[2]);
+        const hrefM = /href="([^"]+)"/.exec(m[0]);
+        const url = hrefM ? hrefM[1] : '';
+        if (title) out.push({ title, url, snippet });
+      }
+      return out;
+    }
+
+    // Default: DuckDuckGo HTML results page (keyless, returns real results).
+    // Falls back to the Instant Answer API if the HTML endpoint is blocked.
+    const ddgHtml = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
+    try {
+      const res = await withTimeout(
+        fetch(ddgHtml, { headers: { 'User-Agent': UA, accept: 'text/html' } }),
+      );
+      if (res.ok) {
+        const html = await res.text();
+        const out: NetSearchResult[] = [];
+        // Each result: <a class="result__a" href="...">title</a> ... <a class="result__snippet">snippet</a>
+        const titleRe = /<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/;
+        const snipRe = /<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/;
+        const blocks = html.split(/<div class="result[^"]*"/).slice(1);
+        for (const b of blocks) {
+          if (out.length >= limit) break;
+          const tm = titleRe.exec(b);
+          if (!tm) continue;
+          const sm = snipRe.exec(b);
+          // DDG wraps result links in a redirector (//duckduckgo.com/l/?uddg=<real>).
+          // Decode to the real destination when present.
+          let url = tm[1];
+          const uddg = /[?&]uddg=([^&]+)/.exec(url);
+          if (uddg) {
+            try {
+              url = decodeURIComponent(uddg[1]);
+            } catch {
+              /* keep raw */
+            }
+          }
+          const title = clean(tm[2]);
+          const snippet = sm ? clean(sm[1]) : '';
+          if (title) out.push({ title, url, snippet });
+        }
+        if (out.length) return out;
+      }
+    } catch {
+      // fall through to Instant Answer API
+    }
+
+    // Fallback: DuckDuckGo Instant Answer API (keyless, curated answers only).
     const ddg = `https://api.duckduckgo.com/?q=${encodeURIComponent(q)}&format=json&no_html=1&skip_disambig=1`;
     const res = await withTimeout(fetch(ddg));
     if (!res.ok) return [];
     const data = (await res.json().catch(() => null)) as any;
     const out: NetSearchResult[] = [];
 
-    // Direct answer (AbstractText) — surfaced as the top result.
     if (data?.AbstractText) {
       out.push({
         title: data.Heading || q,
@@ -467,11 +549,9 @@ export async function searchNet(
         snippet: data.AbstractText,
       });
     }
-    // RelatedTopics — the closest thing DDG's keyless API gives to a result list.
     const topics: any[] = Array.isArray(data?.RelatedTopics) ? data.RelatedTopics : [];
     for (const t of topics) {
       if (out.length >= limit) break;
-      // RelatedTopics may be nested under a "Topics" grouping.
       if (Array.isArray(t?.Topics)) {
         for (const sub of t.Topics) {
           if (out.length >= limit) break;

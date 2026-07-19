@@ -119,8 +119,10 @@ export const AGENT_TOOLS: ToolDefinition[] = [
         limit: { type: 'number', description: 'Max results to return (1–20). Defaults to 8.' },
         engine: {
           type: 'string',
-          description: "Search backend: 'ddg' (default, keyless) or 'url' (custom endpoint).",
-          enum: ['ddg', 'url'],
+          description:
+            "Search backend: 'ddg' (default — DuckDuckGo HTML results, keyless, with Instant Answer fallback), " +
+            "'bing' (Bing HTML, keyless), or 'url' (custom endpoint).",
+          enum: ['ddg', 'bing', 'url'],
         },
         url: {
           type: 'string',
