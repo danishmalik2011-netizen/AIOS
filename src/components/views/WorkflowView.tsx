@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -19,15 +19,23 @@ import {
   X,
   Workflow as WorkflowIcon,
   Trash2,
+  Sparkles,
+  GitBranch,
+  ListTree,
 } from 'lucide-react';
 import { Button } from '@/components/shared/Button';
 import { IconButton } from '@/components/shared/IconButton';
 import { Badge } from '@/components/shared/Badge';
 import { WorkflowNode } from '@/components/workflow/WorkflowNode';
+import { PlanApprovalModal } from '@/components/shared/PlanApprovalModal';
+import { PlanView } from '@/components/shared/PlanView';
+import { RunStatusBar } from '@/components/shared/RunStatusBar';
 import { useWorkflowStore } from '@/store/useWorkflowStore';
 import { useAgentStore } from '@/store/useAgentStore';
+import { useOrchestratorStore } from '@/store/useOrchestratorStore';
 import { toast } from '@/store/useNotificationStore';
 import { runWorkflow } from '@/services/orchestration/workflowRunner';
+import { planGoal, asGraph } from '@/services/orchestration/director';
 import type { AgentStatus, WorkflowNodeData, WorkflowStatus } from '@/core/types';
 import './WorkflowView.css';
 
@@ -90,12 +98,69 @@ export function WorkflowView() {
   const addCounter = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
 
+  /* ---- Fleet Director: /plan + /run equivalent (GUI) ---- */
+  const [goal, setGoal] = useState('');
+  const [showPlan, setShowPlan] = useState(false);
+  const [showPlanPanel, setShowPlanPanel] = useState(false);
+  const orchestrator = useOrchestratorStore();
+
   const stopRun = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
   }, []);
 
   useEffect(() => stopRun, [stopRun]);
+
+  /**
+   * Decompose a high-level goal with the Fleet Director. Mirrors the CLI's
+   * `/plan`: produces an OrchestrationPlan (LLM-assisted when a key is present,
+   * else heuristic) and stashes it in useOrchestratorStore behind an approval
+   * gate — the workspace is NOT touched until the user approves.
+   */
+  const handleDecompose = useCallback(async () => {
+    const text = goal.trim();
+    if (!text) {
+      toast.warning('Enter a goal', 'Describe what you want the fleet to do.');
+      return;
+    }
+    const controller = new AbortController();
+    abortRef.current = controller;
+    orchestrator.setRunning(true);
+    orchestrator.setDirectorThinking('brewing the task graph…');
+    try {
+      const agents = useAgentStore.getState().agents;
+      const plan = await planGoal(text, agents, controller.signal);
+      orchestrator.setPlan(plan);
+      orchestrator.setDirectorThinking(null);
+      setShowPlan(true);
+    } catch (err) {
+      orchestrator.setDirectorThinking(null);
+      orchestrator.setRunning(false);
+      toast.error('Decomposition failed', (err as Error).message);
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
+    }
+  }, [goal, orchestrator]);
+
+  /**
+   * Approve the proposed plan: convert it to a React-Flow graph and load it
+   * onto the canvas, then it can be executed with the existing Run button.
+   * Also seeds the orchestrator subtask progress so the run updates it live.
+   */
+  const handleApprovePlan = useCallback(() => {
+    const plan = orchestrator.plan;
+    if (!plan) return;
+    const { nodes: gNodes, edges: gEdges } = asGraph(plan);
+    useWorkflowStore.getState().setNodes(gNodes);
+    useWorkflowStore.getState().setEdges(gEdges);
+    setShowPlan(false);
+    toast.success('Plan loaded', `${plan.subtasks.length} steps added to the canvas. Run the fleet when ready.`);
+  }, [orchestrator]);
+
+  const handleEditGoal = useCallback((newGoal: string) => {
+    setGoal(newGoal);
+    setShowPlan(false);
+  }, []);
 
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) ?? null,
@@ -155,7 +220,19 @@ export function WorkflowView() {
         currentEdges,
         agents,
         {
-          onStatus: (id, s) => updateNodeData(id, { status: s }),
+          onStatus: (id, s) => {
+            updateNodeData(id, { status: s });
+            orchestrator.updateSubtask(id, {
+              status:
+                s === 'running'
+                  ? 'running'
+                  : s === 'completed'
+                    ? 'completed'
+                    : s === 'error'
+                      ? 'error'
+                      : 'idle',
+            });
+          },
           onProgress: (id, p) => updateNodeData(id, { progress: p }),
           onWave: (ids, i) => {
             if (ids.length > 1) {
@@ -300,6 +377,28 @@ export function WorkflowView() {
         </div>
 
         <div className="workflow-view__toolbar-actions">
+          <div className="workflow-view__goal">
+            <GitBranch size={14} className="workflow-view__goal-glyph" />
+            <input
+              className="workflow-view__goal-input glass-input"
+              type="text"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !orchestrator.isRunning) handleDecompose();
+              }}
+              placeholder="Describe a goal — the Director decomposes it…"
+            />
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Sparkles size={15} />}
+              onClick={handleDecompose}
+              disabled={orchestrator.isRunning || !goal.trim()}
+            >
+              Decompose
+            </Button>
+          </div>
           <Button
             variant="primary"
             size="sm"
@@ -326,8 +425,39 @@ export function WorkflowView() {
           >
             Add Node
           </Button>
+          <Button
+            variant={showPlanPanel ? 'secondary' : 'ghost'}
+            size="sm"
+            icon={<ListTree size={15} />}
+            onClick={() => setShowPlanPanel((v) => !v)}
+            disabled={!orchestrator.plan}
+          >
+            Plan
+          </Button>
         </div>
       </div>
+
+      {/* ---- Live run status strip ---- */}
+      {orchestrator.plan && (
+        <div className="workflow-view__runbar">
+          <RunStatusBar />
+        </div>
+      )}
+
+      {/* ---- Plan panel (docked) ---- */}
+      {showPlanPanel && orchestrator.plan && (
+        <div className="workflow-view__plan-panel glass-panel animate-fade-in">
+          <PlanView
+            selectedId={selectedNodeId}
+            onSelectStep={(id) => {
+              const node = nodes.find((n) => n.id === id);
+              if (node) {
+                setSelectedNode(node as never);
+              }
+            }}
+          />
+        </div>
+      )}
 
       {/* ---- Inspector ---- */}
       {selectedNode && (
@@ -406,6 +536,18 @@ export function WorkflowView() {
           </footer>
         </aside>
       )}
+
+      <PlanApprovalModal
+        plan={showPlan ? orchestrator.plan : null}
+        goal={goal}
+        onApprove={handleApprovePlan}
+        onEdit={handleEditGoal}
+        onCancel={() => {
+          setShowPlan(false);
+          orchestrator.setRunning(false);
+          orchestrator.setDirectorThinking(null);
+        }}
+      />
     </div>
   );
 }

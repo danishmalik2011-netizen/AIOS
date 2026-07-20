@@ -40,11 +40,11 @@ process.parentPort.on('message', (event) => {
 
       sessions.set(sessionId, ptyProcess);
 
-      ptyProcess.onData((out) => {
+      ptyProcess.onData((out: string) => {
         process.parentPort.postMessage({ type: 'data', sessionId, data: out });
       });
 
-      ptyProcess.onExit(({ exitCode }) => {
+      ptyProcess.onExit(({ exitCode }: { exitCode: number }) => {
         process.parentPort.postMessage({ type: 'exit', sessionId, exitCode });
         sessions.delete(sessionId);
       });
@@ -86,10 +86,10 @@ process.parentPort.on('message', (event) => {
         // ignore
       }
       // Re-establish data/exit listeners
-      ptyProcess.onData((out) => {
+      ptyProcess.onData((out: string) => {
         process.parentPort.postMessage({ type: 'data', sessionId, data: out });
       });
-      ptyProcess.onExit(({ exitCode }) => {
+      ptyProcess.onExit(({ exitCode }: { exitCode: number }) => {
         process.parentPort.postMessage({ type: 'exit', sessionId, exitCode });
         sessions.delete(sessionId);
       });

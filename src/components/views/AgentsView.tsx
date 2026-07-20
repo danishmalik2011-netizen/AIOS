@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   useState,
   useEffect,
   useRef,
@@ -119,8 +119,8 @@ const ROLE_LABELS: Record<AgentRole, string> = {
 };
 
 /** Providers that authenticate with an API key (vs. local/offline drivers).
- *  A custom provider pointing at a local server (Ollama's /v1, vLLM, …) is
- *  keyless; everything else (OpenRouter, Groq, DeepSeek, …) needs a key. */
+ *  A custom provider pointing at a local server (Ollama's /v1, vLLM, â€¦) is
+ *  keyless; everything else (OpenRouter, Groq, DeepSeek, â€¦) needs a key. */
 function providerNeedsKey(id: string): boolean {
   if (id === 'ollama') return false;
   const provider = useSettingsStore.getState().providers.find((p) => p.id === id);
@@ -139,8 +139,8 @@ function defaultModelFor(providerId: string, providers: AIProvider[]): string {
 /**
  * Pick a sensible starting provider for a brand-new chat: a cloud provider the
  * user has actually keyed, then any explicitly connected provider, else the
- * first configured cloud provider. Ollama is treated as a last resort — never
- * a default — so a fresh chat doesn't silently target a local server that may
+ * first configured cloud provider. Ollama is treated as a last resort â€” never
+ * a default â€” so a fresh chat doesn't silently target a local server that may
  * not be running.
  */
 function pickDefaultProvider(providers: AIProvider[]): string {
@@ -351,7 +351,7 @@ function recursiveGetFiles(nodes: ProjectFile[]): ProjectFile[] {
 class ToolRejectedError extends Error {}
 
 /** Derive a concise, human-readable conversation title from the first prompt
- *  and the working project — e.g. "Refactor auth flow · my-app". Strips code
+ *  and the working project â€” e.g. "Refactor auth flow Â· my-app". Strips code
  *  fences/markup and caps length so the sidebar stays tidy. */
 function generateSmartTitle(text: string, project?: string | null): string {
   let cleaned = text
@@ -363,16 +363,16 @@ function generateSmartTitle(text: string, project?: string | null): string {
   let title = words || 'New Conversation';
   title = title.charAt(0).toUpperCase() + title.slice(1);
 
-  if (project) title = `${title} · ${project}`;
+  if (project) title = `${title} Â· ${project}`;
 
   const MAX = 56;
   if (title.length > MAX) {
     // Prefer trimming the prompt part, keeping the project suffix if present.
-    if (project && title.endsWith(`· ${project}`)) {
+    if (project && title.endsWith(`Â· ${project}`)) {
       const base = title.slice(0, title.length - project.length - 3).trim();
-      title = `${base.slice(0, MAX - project.length - 4).trimEnd()}… · ${project}`;
+      title = `${base.slice(0, MAX - project.length - 4).trimEnd()}â€¦ Â· ${project}`;
     } else {
-      title = `${title.slice(0, MAX - 1).trimEnd()}…`;
+      title = `${title.slice(0, MAX - 1).trimEnd()}â€¦`;
     }
   }
   return title;
@@ -434,7 +434,7 @@ function buildProviderHistory(messages: ChatMessage[]): ProviderMessage[] {
  * Keep a provider request within the model's context budget. The agent loop
  * appends an assistant `tool_calls` message + tool-result messages for every
  * tool round and re-sends the whole history each round, so an unbounded
- * history eventually overflows the context window — which many OpenAI-compatible
+ * history eventually overflows the context window â€” which many OpenAI-compatible
  * providers report as a bare `invalid_request_error` 400.
  *
  * `level` is the compaction level (0 = gentle steady-state cap, higher = more
@@ -447,6 +447,12 @@ function buildProviderHistory(messages: ChatMessage[]): ProviderMessage[] {
  */
 const PROVIDER_MSG_CAP = [40, 26, 15, 6];
 const TOOL_CONTENT_CAP = [6000, 3000, 1500, 600];
+/**
+ * Max times we re-prompt the model with the exact tool-call format when it
+ * emits a malformed/non-parsing tool intent (instead of leaking raw text).
+ * Bounded so a genuinely broken model can't loop forever.
+ */
+const MAX_TOOL_REPAIR = 2;
 
 function capProviderHistory(history: ProviderMessage[], level = 0): ProviderMessage[] {
   const lvl = Math.max(0, Math.min(level, PROVIDER_MSG_CAP.length - 1));
@@ -464,7 +470,7 @@ function capProviderHistory(history: ProviderMessage[], level = 0): ProviderMess
       const tail = m.content.slice(-half);
       return {
         ...m,
-        content: `${head}\n…[tool result truncated: ${m.content.length - maxContent} chars]…\n${tail}`,
+        content: `${head}\nâ€¦[tool result truncated: ${m.content.length - maxContent} chars]â€¦\n${tail}`,
       };
     }
     return m;
@@ -503,33 +509,67 @@ function computeLineDiff(
   return { additions: n - common, deletions: m - common };
 }
 
-/** Parse <tool_call> XML tags out of model text (fallback for providers without native tools). */
-function parseXmlToolCalls(content: string): ToolCall[] {
-  const toolCalls: ToolCall[] = [];
+/**
+ * Parse <tool_call> XML tags out of model text (fallback for providers without
+ * native tools). Tolerant of the malformations weak tool-calling models emit:
+ *   - unquoted / bare names:        <tool_call name=run_command>
+ *   - `>` instead of `/>` for self-close
+ *   - a stray prefix/wrapper before the tag (e.g. `]<]minimax[>[<tool_call ...`)
+ *   - missing `</tool_call>` close (body captured up to the next tag or EOS)
+ *
+ * Returns the parsed calls plus a `malformed` flag: true when the text clearly
+ * *intended* a tool call (a `<tool_call` fragment, or a known tool name wrapped
+ * in a non-standard bracket) but none parsed cleanly. The caller uses this to
+ * repair/re-prompt instead of leaking the raw text to the user as narration.
+ */
+function parseXmlToolCalls(
+  content: string,
+  knownToolNames: string[] = [],
+): { calls: ToolCall[]; malformed: boolean } {
+  const calls: ToolCall[] = [];
+  // name may be quoted or bare; body optional; close may be `/>`, `>`, or a
+  // separate `</tool_call>`. The prefix before `<tool_call` is ignored.
   const toolRegex =
-    /<tool_call\s+name="([^"]+)"([^>]*?)>(?:([\s\S]*?)<\/tool_call>)?|<tool_call\s+name="([^"]+)"([^>]*?)\/>/gi;
-  let match;
+    /<tool_call\s+name\s*=\s*"?([\w.-]+)"?\s*([^>]*?)(?:\/>|>([\s\S]*?)<\/tool_call>|>)/gi;
+  let match: RegExpExecArray | null;
   while ((match = toolRegex.exec(content)) !== null) {
-    const name = match[1] || match[4];
-    const attributesStr = match[2] || match[5] || '';
+    const name = match[1];
+    const attributesStr = match[2] || '';
     const bodyContent = match[3] || '';
+    if (!name) continue;
 
     const argMap: Record<string, string> = {};
-    const attrRegex = /(\w+)="([^"]*)"/g;
-    let attrMatch;
+    const attrRegex = /(\w+)\s*=\s*"([^"]*)"/g;
+    let attrMatch: RegExpExecArray | null;
     while ((attrMatch = attrRegex.exec(attributesStr)) !== null) {
       argMap[attrMatch[1]] = attrMatch[2];
     }
-    if (bodyContent) argMap['content'] = bodyContent;
+    if (bodyContent.trim()) argMap['content'] = bodyContent.trim();
 
-    toolCalls.push({
+    calls.push({
       id: crypto.randomUUID(),
       name,
       arguments: JSON.stringify(argMap),
       status: 'running',
     });
   }
-  return toolCalls;
+
+  // Detect a malformed tool-call *intent* the regex above failed to parse:
+  // a literal `<tool_call` fragment, or a known tool name sitting inside a
+  // suspicious bracket wrapper (the `]<]minimax[>[` class of leak).
+  const hasFragment = /<tool_call/i.test(content);
+  const bracketWrap = /[\]<\]\)\}>\s]{2,}/.test(content);
+  const nameInWrap = knownToolNames.some(
+    (n) => new RegExp('\b' + escapeRegExp(n) + '\b').test(content) && bracketWrap,
+  );
+  const malformed = calls.length === 0 && (hasFragment || nameInWrap);
+
+  return { calls, malformed };
+}
+
+/** Escape a string for safe use inside a RegExp literal. */
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /* ------------------------------------------------------------------ */
@@ -580,7 +620,7 @@ export function AgentsView() {
   const addMemory = useMemoryStore((s) => s.addEntry);
   const addTerminalSession = useTerminalStore((s) => s.addSession);
 
-  // Auto-access ("trust mode") — uninterrupted agent access to the workspace.
+  // Auto-access ("trust mode") â€” uninterrupted agent access to the workspace.
   const autoAccessEnabled = useAutoAccessStore((s) => s.enabled);
   const autoAccessCommands = useAutoAccessStore((s) => s.commands);
   const autoAccessEdits = useAutoAccessStore((s) => s.edits);
@@ -763,14 +803,14 @@ export function AgentsView() {
           .slice(0, 60);
         if (title) autoTitleSession(id, title);
       } catch {
-        /* ignore — will retry on the next completed turn */
+        /* ignore â€” will retry on the next completed turn */
       }
     },
     [activeProvider, activeModel],
   );
 
   /* ------------------------------------------------------------------ */
-  /*  Plan-then-act gate — explore/ propose BEFORE mutating the
+  /*  Plan-then-act gate â€” explore/ propose BEFORE mutating the
       workspace, and wait for the user to approve.                         */
   /* ------------------------------------------------------------------ */
 
@@ -799,7 +839,7 @@ export function AgentsView() {
 
   /**
    * Draft an execution plan for `text` and stash it (per session). The agent
-   * does NOT run yet — the composer shows Approve / Discard and the plan
+   * does NOT run yet â€” the composer shows Approve / Discard and the plan
    * is rendered in the Agent Canvas. On approve we re-run with the plan
    * injected as hidden context.
    */
@@ -863,7 +903,7 @@ export function AgentsView() {
         planText,
       });
     } catch {
-      toast.error('Planning failed', 'Could not draft a plan — sending the task directly.');
+      toast.error('Planning failed', 'Could not draft a plan â€” sending the task directly.');
       await submitTurn(text, files);
     } finally {
       setPlanning(false);
@@ -900,9 +940,9 @@ export function AgentsView() {
   // Scroll throttle guard.
   const scrollScheduled = useRef(false);
 
-  // (Per-session in-flight turn is tracked in the run manager — see getRun().lastTurn.)
+  // (Per-session in-flight turn is tracked in the run manager â€” see getRun().lastTurn.)
 
-  // Live "thinking" timer tick — drives the per-second counter in the
+  // Live "thinking" timer tick â€” drives the per-second counter in the
   // Working indicator for whichever chat is currently generating.
   const [nowTick, setNowTick] = useState(() => Date.now());
   // Collapsible "what it's doing" panel under the Working indicator.
@@ -916,9 +956,9 @@ export function AgentsView() {
   // (open the file it edits, surface the terminal for a command it runs).
   const [followAgent, setFollowAgent] = useState(false);
 
-  // "Run with Fleet" — route this goal through the background Director, which
+  // "Run with Fleet" â€” route this goal through the background Director, which
   // auto-assigns it across the specialised agents (Architect plans, CodeSmith
-  // builds, …) and threads shared + prior-agent context between them.
+  // builds, â€¦) and threads shared + prior-agent context between them.
   const [fleetMode, setFleetMode] = useState(false);
   const panelCollapsed = useFollowPanelStore((s) => s.collapsed);
   // Fleet run progress (for the composer Stop button + pipeline strip).
@@ -940,7 +980,7 @@ export function AgentsView() {
     return sessions.find((s) => s.id === activeSessionId) || null;
   }, [sessions, activeSessionId]);
 
-  // Token/context stats for the most recent completed interaction — shown in the
+  // Token/context stats for the most recent completed interaction â€” shown in the
   // subtle status bar under the composer (keeps raw numbers out of the bubbles).
   const contextStats = useMemo(() => {
     const contextWindow = getContextWindow(activeModel);
@@ -966,8 +1006,8 @@ export function AgentsView() {
   }, [activeSessionId]);
 
   // Load the FULL model list on startup/provider switch. Works for every
-  // provider (OpenAI, Anthropic, Ollama, OpenRouter/Groq/…) by asking
-  // the driver to fetch its live /models (or /api/tags) endpoint — free
+  // provider (OpenAI, Anthropic, Ollama, OpenRouter/Groq/â€¦) by asking
+  // the driver to fetch its live /models (or /api/tags) endpoint â€” free
   // and paid models together, no curated subset.
   useEffect(() => {
     let cancelled = false;
@@ -999,7 +1039,7 @@ export function AgentsView() {
     };
   }, [activeSessionId]);
 
-  // "Follow Agent" — when enabled, keep the thread pinned to the newest
+  // "Follow Agent" â€” when enabled, keep the thread pinned to the newest
   // message so the view tracks the agent's live output. When disabled,
   // leave scrolling entirely to the user (no forced jumps).
   useEffect(() => {
@@ -1078,8 +1118,8 @@ export function AgentsView() {
     }
     opts.push({
       value: '__open__',
-      label: projectName ? 'Open different folder…' : 'Open folder…',
-      description: 'Switch the assistant’s working project',
+      label: projectName ? 'Open different folderâ€¦' : 'Open folderâ€¦',
+      description: 'Switch the assistantâ€™s working project',
       leading: <FolderOpen size={12} />,
     });
     return opts;
@@ -1132,7 +1172,7 @@ export function AgentsView() {
     }
     const autoAllowed = permMode === 'allow';
 
-    // `wait` is a pure timer — it needs no OS bridge and works in every mode
+    // `wait` is a pure timer â€” it needs no OS bridge and works in every mode
     // (including the web/demo build), so handle it before the aios guard.
     if (name === 'wait') {
       const seconds = Math.min(600, Math.max(1, Math.round(Number(args.seconds) || 5)));
@@ -1315,7 +1355,7 @@ export function AgentsView() {
         // Gate shell commands behind a single, clear approval popup the first
         // time the agent tries to run one. Permission policy still wins: 'deny'
         // blocks outright, 'allow' runs immediately. Once the user approves the
-        // whole session — or switches on uninterrupted auto-access — we skip the
+        // whole session â€” or switches on uninterrupted auto-access â€” we skip the
         // prompt for the remainder of the chat.
         const autoAccessCommands =
           useAutoAccessStore.getState().enabled && useAutoAccessStore.getState().commands;
@@ -1447,7 +1487,7 @@ export function AgentsView() {
       if (scripts.typecheck) return 'npm run typecheck';
       if (scripts.build) return 'npm run build';
     } catch {
-      /* no package.json or unreadable — fall through to default */
+      /* no package.json or unreadable â€” fall through to default */
     }
     return 'npx tsc --noEmit';
   };
@@ -1487,7 +1527,7 @@ export function AgentsView() {
         finalizeTurn(sid, msgId);
         return;
       }
-      // Failure → loop back to the model with the output as a user message.
+      // Failure â†’ loop back to the model with the output as a user message.
       runOf(sid).madeChanges = false;
       runOf(sid).verifyAttempts = runOf(sid).verifyAttempts + 1;
       const out = (res.output || '').trim() || '(no output)';
@@ -1660,7 +1700,8 @@ export function AgentsView() {
     const backoff = 400 * Math.min(runOf(sessionId).failedToolStreak.count, 8);
     const merged = [...priorToolCalls, ...updatedCalls];
     setTimeout(() => {
-      runCompletionTurn(sessionId, nextProviderHistory, toolRound + 1, messageId, currentText, merged, compactLevel);
+      // A successful tool round resets the malformed-tool-call repair counter.
+      runCompletionTurn(sessionId, nextProviderHistory, toolRound + 1, messageId, currentText, merged, compactLevel, 0);
     }, backoff);
   };
 
@@ -1673,6 +1714,7 @@ export function AgentsView() {
     priorText = '',
     priorToolCalls: ToolCall[] = [],
     compactLevel = 0,
+    toolRepairAttempts = 0,
   ) => {
     setGen(sessionId, true);
     runOf(sessionId).isSending = false;
@@ -1708,11 +1750,12 @@ export function AgentsView() {
 
     const msgId = assistantMsgId ?? crypto.randomUUID();
     let accumulatedText = priorText;
+    let lastFlushRef = { current: 0 } as { current: number };
     let started = Boolean(assistantMsgId);
 
     // Eagerly create the assistant bubble for a fresh turn so the user always
     // sees a response. Some providers (under the forced tool-choice the agent
-    // loop requires) stream a tool-only payload with no text delta — if we
+    // loop requires) stream a tool-only payload with no text delta â€” if we
     // waited for the first content delta to spawn the bubble, the reply would
     // be silently dropped and the turn would end with "working" but no message.
     if (!started) {
@@ -1753,35 +1796,35 @@ export function AgentsView() {
     const runtimeContext = `
 
 # Operating Environment
-You are running inside AIOS, an agentic coding OS. You act on the user's real workspace through tools — not by describing actions you never took.
+You are running inside AIOS, an agentic coding OS. You act on the user's real workspace through tools â€” not by describing actions you never took.
 - Agent identity: ${activeAgent.name} (role: ${activeAgent.role})
 - Provider / model serving this session: ${activeProvider} / ${activeModel}
-  → If the user asks which model you are, answer exactly "${activeModel}" (served by ${activeProvider}). Never claim to be Claude, GPT, or any other model.
+  â†’ If the user asks which model you are, answer exactly "${activeModel}" (served by ${activeProvider}). Never claim to be Claude, GPT, or any other model.
 - Operating system: ${platform}
-- Working directory (project root): ${projectRoot || '(none — open a folder to act on files)'}
+- Working directory (project root): ${projectRoot || '(none â€” open a folder to act on files)'}
 - Active workspace project: ${projectName || '(none)'}
-- Auto-access (trust mode): ${aa.enabled ? 'ON — you may run shell commands and write/edit files directly without per-step approval' : 'OFF — mutating tools wait for the user’s approval; read-only tools run automatically'}${activeSession?.goal ? `\n- Goal for this conversation: ${activeSession.goal}\n  → Every action you take should move this objective forward. If a request conflicts with the goal, flag it.` : ''}
+- Auto-access (trust mode): ${aa.enabled ? 'ON â€” you may run shell commands and write/edit files directly without per-step approval' : 'OFF â€” mutating tools wait for the userâ€™s approval; read-only tools run automatically'}${activeSession?.goal ? `\n- Goal for this conversation: ${activeSession.goal}\n  â†’ Every action you take should move this objective forward. If a request conflicts with the goal, flag it.` : ''}
 ${memoryRules}
 
 # How You Operate
-1. Act with tools, don't narrate. When the task requires reading, searching, editing, or running something in the workspace, CALL THE TOOL. Never describe an action in text and claim it is done. Only say a file was written, a command ran, or a change was applied AFTER the tool call returns success. If a tool fails or is rejected, say so honestly and either retry once with corrected arguments or ask the user — never pretend it succeeded.
+1. Act with tools, don't narrate. When the task requires reading, searching, editing, or running something in the workspace, CALL THE TOOL. Never describe an action in text and claim it is done. Only say a file was written, a command ran, or a change was applied AFTER the tool call returns success. If a tool fails or is rejected, say so honestly and either retry once with corrected arguments or ask the user â€” never pretend it succeeded.
 2. Finish the job. Keep using tools until the user's request is fully satisfied. Don't stop early. If you genuinely cannot proceed, explain the blocker concretely and tell the user exactly what they need to do.
 3. Be economical. No "Sure!", no restating the task, no long summaries. Prefer short sentences, bullet points, and code.
 4. One response, one voice. Reply exactly once per turn, in a single consistent tone that fits your agent role. Do not repeat yourself, and do not give the same answer in two different styles or voices.
 5. One path. Prefer the native tool-calling interface. Do not both call a tool AND narrate the same action as text.
-6. Close every turn by calling the respond_to_user tool with a brief status: what you completed, what (if anything) remains, and any blockers/decisions. Keep it short — a few bullets, not a wall of text. This is how the user (and your later self, on the next turn) tracks progress without re-running tools. Never end a turn with bare narration — always route your reply through respond_to_user.
+6. Close every turn by calling the respond_to_user tool with a brief status: what you completed, what (if anything) remains, and any blockers/decisions. Keep it short â€” a few bullets, not a wall of text. This is how the user (and your later self, on the next turn) tracks progress without re-running tools. Never end a turn with bare narration â€” always route your reply through respond_to_user.
 
 # Agent Canvas
 The user watches a live **Agent Canvas** panel beside this chat. Keep it oriented:
-- For any multi-step task, FIRST call \`create_artifact\` with type "plan" (or \`update_plan\`) to lay out a checklist of todos. Then advance each step (pending → active → done) with \`update_plan\` as you work.
+- For any multi-step task, FIRST call \`create_artifact\` with type "plan" (or \`update_plan\`) to lay out a checklist of todos. Then advance each step (pending â†’ active â†’ done) with \`update_plan\` as you work.
 - Call \`create_artifact\` for any deliverable worth keeping beyond the transcript: a spec, doc, design notes, diagram, or code snippet.
-- File edits are shown in the canvas automatically (do not describe them), and a dev server you start appears there as a live preview. Use the canvas to structure work — not to narrate.
+- File edits are shown in the canvas automatically (do not describe them), and a dev server you start appears there as a live preview. Use the canvas to structure work â€” not to narrate.
 
 # Choosing a Tech Stack (do NOT default to one)
 Match the task, never a favourite stack. You have no house framework.
 - Working in an existing project: detect the current stack first (read package.json / requirements.txt / go.mod / Cargo.toml / etc. and the file tree) and follow the conventions already there. Do not introduce React, Three.js, Tailwind, or any new framework/library unless the user asks or the project already uses it.
 - Starting something new: pick the SIMPLEST thing that satisfies what was actually requested. A static page is plain HTML/CSS/JS; a CLI is a single script; a script is a script. Only reach for React (or any SPA framework) when the request truly calls for it, and only add 3D/Three.js/WebGL when the user explicitly wants 3D or animation.
-- If the desired language or framework is genuinely ambiguous for a non-trivial new project, ask one short clarifying question (or state the minimal stack you're about to use) before scaffolding — don't assume React + Three.js.`;
+- If the desired language or framework is genuinely ambiguous for a non-trivial new project, ask one short clarifying question (or state the minimal stack you're about to use) before scaffolding â€” don't assume React + Three.js.`;
 
     // Built-in tools plus any enabled MCP server tools, so external
     // integrations are callable from the chat composer too.
@@ -1790,6 +1833,17 @@ Match the task, never a favourite stack. You have no house framework.
     const systemPromptWithTools = `${activeAgent.systemPrompt}${runtimeContext}
 
 You can act on the workspace using the provided tools. Only invoke tools when you need to read, search, edit, or run something in the workspace.
+
+# Tool-call format (STRICT â€” read carefully)
+You MUST emit tool calls in EXACTLY this XML form, with NO surrounding wrapper, NO prefix, and NO commentary around the tag:
+  <tool_call name="tool_name" arg1="value" arg2="value"/>
+When a tool takes a free-form body (e.g. file contents), put it between the tags:
+  <tool_call name="tool_name" arg="value">body text here</tool_call>
+Rules:
+- The tag name is literally \`<tool_call\` (lowercase, with the underscore). Do NOT wrap it in other brackets, arrows, or markers (e.g. never \`]<]...[>[<tool_call\`).
+- The \`name\` attribute is required and MUST be double-quoted.
+- Emit ONE tool call (or a short sequence of them) per turn, then call \`respond_to_user\`. Do not narrate the command as plain text â€” the tool call IS the action.
+- Any deviation from this exact format will NOT be executed and will be treated as an error; you will be asked to re-issue it correctly.
 
 Available tools:
 ${toolsToXmlPromptDoc(activeTools)}`;
@@ -1810,18 +1864,60 @@ ${toolsToXmlPromptDoc(activeTools)}`;
           signal: controller.signal,
           onDelta: (delta) => {
             accumulatedText += delta;
-            ensureMsgBubble(accumulatedText);
+            // Throttle store writes during streaming. Writing the full chat
+            // store on EVERY token delta re-renders the whole app shell and
+            // (via persist) serialises all sessions to localStorage per token
+            // — the main cause of the UI freezing mid-response. Flush at most
+            // ~10x/sec; a final flush happens when the turn completes.
+            const now = performance.now();
+            if (now - lastFlushRef.current >= 100) {
+              lastFlushRef.current = now;
+              ensureMsgBubble(accumulatedText);
+              useFollowPanelStore.getState().setLiveText(accumulatedText);
+            }
             scrollToBottom();
-            useFollowPanelStore.getState().setLiveText(accumulatedText);
           },
         },
       );
 
+      // Final flush of any text streamed since the last throttled write,
+      // so the completed message always contains the full response.
+      lastFlushRef.current = 0;
+      ensureMsgBubble(accumulatedText);
+      useFollowPanelStore.getState().setLiveText(accumulatedText);
       // Prefer native tool calls; fall back to parsing <tool_call> XML tags.
       const nativeCalls = res.toolCalls && res.toolCalls.length > 0 ? res.toolCalls : null;
-      const toolCalls: ToolCall[] = nativeCalls
-        ? nativeToToolCalls(nativeCalls)
-        : parseXmlToolCalls(res.content);
+      const parsed = nativeCalls
+        ? { calls: nativeToToolCalls(nativeCalls), malformed: false }
+        : parseXmlToolCalls(res.content, activeTools.map((t) => t.name));
+      const toolCalls: ToolCall[] = parsed.calls;
+
+      // The model emitted something that *looks* like a tool call but did not
+      // parse into a valid call (malformed XML / wrong wrapper / stray prefix
+      // such as `]<]minimax[>[<tool_call ...`). Do NOT leak that raw text to the
+      // user as narration â€” repair by re-prompting with the exact required
+      // format and retrying (bounded), so a weak tool-calling model gets a
+      // second chance before we give up.
+      if (toolCalls.length === 0 && parsed.malformed && toolRepairAttempts < MAX_TOOL_REPAIR) {
+        const repairNote =
+          'Your last message was NOT a valid tool call and was ignored. You MUST emit EXACTLY this format with no extra wrapper, prefix, or commentary:\n' +
+          '<tool_call name="tool_name" arg="value"/>\n' +
+          'or, when the tool takes a body:\n' +
+          '<tool_call name="tool_name">body text here</tool_call>\n' +
+          'Re-issue your intended tool call now and output nothing else.';
+        providerHistory.push({ role: 'user', content: repairNote });
+        runCompletionTurn(
+          sessionId,
+          providerHistory,
+          toolRound,
+          assistantMsgId,
+          priorText,
+          priorToolCalls,
+          compactLevel,
+          toolRepairAttempts + 1,
+        );
+        return;
+      }
 
       const mergedToolCalls = [...priorToolCalls, ...toolCalls];
 
@@ -1843,12 +1939,13 @@ ${toolsToXmlPromptDoc(activeTools)}`;
             priorText,
             priorToolCalls,
             compactLevel + 1,
+            toolRepairAttempts,
           );
           return;
         }
         updateMessage(sessionId, msgId, {
           content:
-            '_(The model returned an empty response — the request was likely truncated after a long run. Try starting a fresh session or shortening the task.)_',
+            '_(The model returned an empty response â€” the request was likely truncated after a long run. Try starting a fresh session or shortening the task.)_',
           status: 'complete',
           toolCalls: mergedToolCalls.length > 0 ? mergedToolCalls : undefined,
         });
@@ -1860,7 +1957,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
       // If the model chose to respond to the user (final answer / summary /
       // "done") instead of taking another workspace action, surface that message
       // and end the turn. Under forced tool choice the model can NEVER end a
-      // turn with bare narration — it must either call an action tool or this.
+      // turn with bare narration â€” it must either call an action tool or this.
       const respondCall = toolCalls.find((c) => c.name === 'respond_to_user');
       if (respondCall) {
         let msg = '';
@@ -1874,7 +1971,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
         const finalMsg =
           (msg || accumulatedText).trim() ||
           (displayCalls.length > 0
-            ? '_(completed tool actions — see above)_'
+            ? '_(completed tool actions â€” see above)_'
             : '_(The model returned an empty response. Try rephrasing, or switch the model.)_');
         updateMessage(sessionId, msgId, {
           content: finalMsg,
@@ -1907,10 +2004,10 @@ ${toolsToXmlPromptDoc(activeTools)}`;
       const finalContent =
         accumulatedText.trim() ||
         (mergedToolCalls.length > 0
-          ? '_(completed tool actions — see above)_'
+          ? '_(completed tool actions â€” see above)_'
           : '_(The model returned an empty response. Try rephrasing, or switch the model.)_');
 
-      // Update turn status — keep one assistant bubble for the whole task.
+      // Update turn status â€” keep one assistant bubble for the whole task.
       updateMessage(sessionId, msgId, {
         content: finalContent,
         status: 'complete',
@@ -1964,7 +2061,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
       // up to the most aggressive level) before giving up.
       const errMsg = err?.message || '';
       // Many providers (especially OpenAI-compatible / custom gateways) return a
-      // generic 400 with no "context length" wording — e.g. "Provider error 400:
+      // generic 400 with no "context length" wording â€” e.g. "Provider error 400:
       // Provider returned error". A bare 400 on a request that previously worked
       // (i.e. the format is valid) is, in practice, a context-window overflow, so
       // treat HTTP 400 as an overflow signal and tighten the history. Genuine
@@ -1984,6 +2081,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
           priorText,
           priorToolCalls,
           compactLevel + 1,
+          toolRepairAttempts,
         );
         return;
       }
@@ -2007,7 +2105,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
   /**
    * Core send. Returns true if a turn was actually scheduled (so the send lock
    * can be held until generation begins), false if it bailed early (e.g. missing
-   * API key) — in which case the lock must be released by the caller.
+   * API key) â€” in which case the lock must be released by the caller.
    */
   const submitTurn = async (
     text: string,
@@ -2017,7 +2115,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
     if (activeSessionId) runOf(activeSessionId).isSending = true;
     try {
       // `/goal <objective>` sets the conversation objective without sending a
-      // standalone message — it's stored on the session and injected as context.
+      // standalone message â€” it's stored on the session and injected as context.
       const goalMatch = text.match(/^\/goal\s+([\s\S]+)$/);
       if (goalMatch) {
         const goal = goalMatch[1].trim();
@@ -2040,14 +2138,14 @@ ${toolsToXmlPromptDoc(activeTools)}`;
           providers.find((p) => p.id === activeProvider)?.name ?? activeProvider;
         setErrorState({
           statusText: 'API key required',
-          message: `No API key is configured for ${providerName}. Add it in Settings → AI Providers, or switch to a local/offline provider.`,
+          message: `No API key is configured for ${providerName}. Add it in Settings â†’ AI Providers, or switch to a local/offline provider.`,
         });
         return false;
       }
 
       let finalSessionId = activeSessionId;
 
-      // Attach file contents context block — kept out of the visible bubble and
+      // Attach file contents context block â€” kept out of the visible bubble and
       // fed to the model only (see `hidden` on the message).
       let fileContextBlock = '';
       if (files.length > 0) {
@@ -2106,7 +2204,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
 
       const hiddenContext = (fileContextBlock + contextBlock + referencedContext + planBlock).trim() || undefined;
 
-      // Create session if none is selected — seed it with a smart title derived
+      // Create session if none is selected â€” seed it with a smart title derived
       // from the first prompt (and the working project), not the raw text.
       if (!finalSessionId) {
         finalSessionId = createSession(
@@ -2133,7 +2231,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
 
       addMessage(finalSessionId, userMessage);
 
-      // Fresh turn — reset the runaway-failure detector and the
+      // Fresh turn â€” reset the runaway-failure detector and the
       // self-verification attempt counter.
       runOf(finalSessionId).failedToolStreak = { sig: '', count: 0 };
       runOf(finalSessionId).verifyAttempts = 0;
@@ -2203,6 +2301,40 @@ ${toolsToXmlPromptDoc(activeTools)}`;
     scheduleNext();
   };
 
+
+  /**
+   * Resolve the best Groq audio-transcription model at request time.
+   * Groq exposes its model catalogue via the OpenAI-compatible /models
+   * endpoint; we filter for Whisper-style transcription models and prefer
+   * the largest/fastest generally-available one. Falls back to a known-good
+   * model id if the live list is unreachable or returns nothing.
+   */
+  const pickGroqTranscriptionModel = async (key: string): Promise<string> => {
+    const FALLBACK = 'whisper-large-v3';
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/models', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${key}` },
+      });
+      if (!res.ok) return FALLBACK;
+      const data = await res.json();
+      const ids: string[] = (data?.data ?? [])
+        .map((m: any) => m?.id ?? '')
+        .filter((id: string) => /whisper/i.test(id));
+      if (ids.length === 0) return FALLBACK;
+      const rank = (id: string) => {
+        if (id.includes('large-v3-turbo')) return 0;
+        if (id.includes('large-v3')) return 1;
+        if (id.includes('distil')) return 2;
+        return 3;
+      };
+      ids.sort((a, b) => rank(a) - rank(b));
+      return ids[0];
+    } catch {
+      return FALLBACK;
+    }
+  };
+
   const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
     const getApiKeyAsync = async (p: string): Promise<string | null> => {
       const cached = getApiKey(p);
@@ -2223,7 +2355,9 @@ ${toolsToXmlPromptDoc(activeTools)}`;
     const geminiKey = (await getApiKeyAsync('gemini')) || (await getApiKeyAsync('google')) || (await getApiKeyAsync('openrouter'));
 
     if (!groqKey && !openaiKey && !geminiKey) {
-      throw new Error("No API key configured for speech transcription. Please configure a Gemini, Groq, or OpenAI API key in Settings.");
+      // No cloud key configured â€” fall back to the OS-native offline engine
+      // (Windows SAPI dictation) so the mic still works with zero setup.
+      return localTranscribe();
     }
 
     const blobToBase64 = (blob: Blob): Promise<string> => {
@@ -2239,12 +2373,16 @@ ${toolsToXmlPromptDoc(activeTools)}`;
       });
     };
 
-    // 1. Try Groq Whisper (blazing fast and free developer tier)
+    // 1. Try Groq Whisper (blazing fast and free developer tier).
+    // Pick the best available transcription model dynamically instead of
+    // hardcoding it, so we survive renames/deprecations. Falls back to a
+    // known-good model if the live list can't be fetched.
     if (groqKey) {
       try {
+        const groqModel = await pickGroqTranscriptionModel(groqKey);
         const formData = new FormData();
         formData.append('file', audioBlob, 'speech.webm');
-        formData.append('model', 'whisper-large-v3');
+        formData.append('model', groqModel);
         const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
           method: 'POST',
           headers: {
@@ -2316,7 +2454,31 @@ ${toolsToXmlPromptDoc(activeTools)}`;
       }
     }
 
-    throw new Error("Speech transcription failed. Please verify your Gemini or Groq API keys in Settings.");
+    // All cloud providers failed (or were unavailable) â€” try the offline
+    // OS-native engine as a last resort before giving up.
+    try {
+      const local = await localTranscribe();
+      if (local && local.trim().length > 0) return local;
+    } catch (le) {
+      console.error("Local transcription fallback failed:", le);
+    }
+
+    throw new Error("Speech transcription failed. Please verify your Gemini or Groq API keys in Settings, or use a Windows PC for offline dictation.");
+  };
+
+  /**
+   * Offline, OS-native transcription via the electron main process
+   * (Windows SAPI dictation). Used when no cloud API key is configured or
+   * when every cloud provider fails. Returns "" if nothing was recognized.
+   */
+  const localTranscribe = async (): Promise<string> => {
+    if (typeof window === 'undefined' || !window.aios || !window.aios.stt) {
+      throw new Error("Offline speech recognition is not available in this build.");
+    }
+    const res = await window.aios.stt.transcribe();
+    if (res && res.ok && res.text) return res.text;
+    // Non-fatal: surface a helpful message but don't crash the mic flow.
+    throw new Error(res?.error || "Offline speech recognition did not return any text.");
   };
 
   const toggleSpeechRecognition = () => {
@@ -2344,7 +2506,10 @@ ${toolsToXmlPromptDoc(activeTools)}`;
               // Stop all audio tracks in the stream to release the mic
               stream.getTracks().forEach((track) => track.stop());
 
-              toast.info('Transcribing voice', 'Sending audio to Whisper...');
+              // Decide the message up-front: if no cloud key is configured we
+              // go straight to the offline OS engine, so don't say "Whisper".
+              const hasCloudKey = !!(getApiKey('groq') || getApiKey('openai') || getApiKey('gemini') || getApiKey('google'));
+              toast.info('Transcribing voice', hasCloudKey ? 'Sending audio to Whisper...' : 'Listening via offline speech engine...');
               try {
                 const text = await transcribeAudio(audioBlob);
                 if (text && text.trim()) {
@@ -2353,6 +2518,9 @@ ${toolsToXmlPromptDoc(activeTools)}`;
                     return cleanPrev ? cleanPrev + ' ' + text.trim() : text.trim();
                   });
                   toast.success('Transcribed successfully', 'Voice input appended.');
+                } else {
+                  // Engine ran but heard nothing â€” non-fatal, just inform.
+                  toast.info('No speech detected', 'Try speaking a little closer to the microphone and tap the mic again.');
                 }
               } catch (err: any) {
                 console.error("Transcription error:", err);
@@ -2379,31 +2547,67 @@ ${toolsToXmlPromptDoc(activeTools)}`;
 
   const toggleReadAloud = (messageId: string, content: string) => {
     try {
+      // If this message is already being read, stop it.
       if (speakingMessageId === messageId) {
-        if (typeof window !== 'undefined' && window.speechSynthesis) {
+        if (window.aios?.tts) {
+          void window.aios.tts.cancel();
+        } else if (typeof window !== 'undefined' && window.speechSynthesis) {
           window.speechSynthesis.cancel();
         }
         setSpeakingMessageId(null);
-      } else {
-        if (typeof window !== 'undefined' && window.speechSynthesis) {
-          window.speechSynthesis.cancel();
-        }
+        return;
+      }
 
+      // Cancel anything currently playing, then start the new message.
+      if (window.aios?.tts) {
+        void window.aios.tts.cancel();
+        const cleanText = content
+          .replace(/```[\s\S]*?```/g, '[code block]')
+          .replace(/[*_#`\-]/g, '');
+        setSpeakingMessageId(messageId);
+        void window.aios.tts.speak({ text: cleanText, rate: 1.25 }).then((res) => {
+          if (!res?.ok) {
+            console.warn('TTS failed:', res?.error);
+            setSpeakingMessageId(null);
+            toast.error('Speech Output Error', res?.error || 'Text-to-speech is unavailable on this system.');
+          }
+        });
+        return;
+      }
+
+      // Fallback: in-browser Web Speech API (works only where Chromium has voices).
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
         const cleanText = content.replace(/```[\s\S]*?```/g, '[code block]').replace(/[*_#`\-]/g, '');
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.rate = 1.25; // Bit faster
         utterance.onend = () => setSpeakingMessageId(null);
         utterance.onerror = () => setSpeakingMessageId(null);
-
         setSpeakingMessageId(messageId);
         window.speechSynthesis.speak(utterance);
+      } else {
+        toast.error('Speech Output Error', 'Text-to-speech is not available.');
+        setSpeakingMessageId(null);
       }
     } catch (err: any) {
-      console.error("Speech synthesis failed:", err);
-      toast.error("Speech Output Error", "Speech synthesis failed or was blocked.");
+      console.error('Speech synthesis failed:', err);
+      toast.error('Speech Output Error', 'Speech synthesis failed or was blocked.');
       setSpeakingMessageId(null);
     }
   };
+
+  // Keep the UI in sync with the OS speech engine: clear the "speaking"
+  // highlight when playback finishes naturally or errors out.
+  useEffect(() => {
+    if (!window.aios?.tts?.onEnd) return;
+    const off = window.aios.tts.onEnd((payload) => {
+      if (payload?.error) {
+        console.warn('TTS ended with error:', payload.error);
+      }
+      setSpeakingMessageId(null);
+    });
+    return off;
+  }, []);
 
   const handlePolishPrompt = async () => {
     const text = draft.trim();
@@ -2472,14 +2676,14 @@ ${toolsToXmlPromptDoc(activeTools)}`;
     }
 
     // If the agent is mid-turn (streaming or running a tool/command), queue the
-    // message so it's delivered only once the agent is free — never interrupt an
+    // message so it's delivered only once the agent is free â€” never interrupt an
     // in-flight command or edit.
     if (isGenerating || (activeSessionId ? runOf(activeSessionId).isSending : false)) {
       enqueueMessage(trimmed, filesToSend);
       setDraft('');
       setAttachedFiles([]);
       setIsFilePickerOpen(false);
-      toast.info('Queued', 'Message queued — it will send when the agent is free.');
+      toast.info('Queued', 'Message queued â€” it will send when the agent is free.');
       return;
     }
 
@@ -2526,7 +2730,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
     setTurnStart(activeSession.id, null);
     setGen(activeSession.id, false);
     run.isSending = false;
-    // A stopped turn frees the agent — release any queued message.
+    // A stopped turn frees the agent â€” release any queued message.
     scheduleNext();
   };
 
@@ -2535,7 +2739,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
    * work across the specialised agents (by role), threads the SAME shared
    * context plus each prior agent's output into every agent's structured task
    * prompt, and posts each deliverable into the chat. The optional planning
-   * LLM — like every LLM call — uses the active session's provider/model.
+   * LLM â€” like every LLM call â€” uses the active session's provider/model.
    */
   const runFleet = useCallback(
     async (goal: string) => {
@@ -2567,7 +2771,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
 
       const controller = orchestrator.beginRun();
 
-      // Shared context the WHOLE fleet receives — one reality for every agent.
+      // Shared context the WHOLE fleet receives â€” one reality for every agent.
       // Note: each agent executes on its OWN configured provider/model (set in
       // the Agent Roster); only the optional planning LLM uses the session's.
       const memoryEntries = useMemoryStore.getState().entries.slice(0, 8);
@@ -2580,7 +2784,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
         `Each agent runs on its own configured provider/model.`;
 
       // Each agent executes on the provider/model configured for it in the
-      // Agent Roster (Account page). The roster setting is authoritative — the
+      // Agent Roster (Account page). The roster setting is authoritative â€” the
       // fleet never silently rewrites it to a different provider. If an agent's
       // configured provider needs a key and none is set, we surface a clear
       // error for that subtask instead of routing it to ollama/session default.
@@ -2591,7 +2795,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
 
       try {
         orchestrator.setDirectorThinking(
-          'Director is decomposing the goal into agent tasks…',
+          'Director is decomposing the goal into agent tasksâ€¦',
         );
         const plan = await planGoal(goal, agents, controller.signal);
         orchestrator.setPlan(plan);
@@ -2671,7 +2875,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
               id: crypto.randomUUID(),
               agentId: agent.id,
               role: 'assistant',
-              content: `**${agent.name} — ${task.role}**\n\n${result.content}`,
+              content: `**${agent.name} â€” ${task.role}**\n\n${result.content}`,
               timestamp: Date.now(),
               status: 'complete',
             });
@@ -2686,7 +2890,7 @@ ${toolsToXmlPromptDoc(activeTools)}`;
               id: crypto.randomUUID(),
               agentId: agent.id,
               role: 'assistant',
-              content: `**${agent.name} — ${task.role}** ⚠️ failed: ${err?.message || 'Agent failed'}`,
+              content: `**${agent.name} â€” ${task.role}** âš ï¸ failed: ${err?.message || 'Agent failed'}`,
               timestamp: Date.now(),
               status: 'error',
             });
@@ -2835,7 +3039,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
     setErrorState(null);
 
     const runTurn = () => {
-      // Only regenerate if the user is still on the same conversation — if they
+      // Only regenerate if the user is still on the same conversation â€” if they
       // navigated away, drop the request instead of hijacking another chat.
       if (activeSessionId !== targetSessionId) return;
       void submitTurn(promptText, promptFiles);
@@ -2938,7 +3142,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
           <div className="agents-rail__search">
             <Input
               icon={<Search size={14} />}
-              placeholder="Search conversations…"
+              placeholder="Search conversationsâ€¦"
               value={sessionSearchQuery}
               aria-label="Search chat sessions"
               onChange={(e: ChangeEvent<HTMLInputElement>) => setSessionSearchQuery(e.target.value)}
@@ -3121,12 +3325,12 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                 case 'available':
                   return (
                     <div className="relaunch-update-card relaunch-update-card--available" onClick={() => downloadUpdate()}>
-                      <span className="leaf-icon">📥</span>
+                      <span className="leaf-icon">ðŸ“¥</span>
                       <div className="update-card-text">
                         <span className="update-title">Update Available (v{version})</span>
                         <span className="update-version">Click to download update</span>
                       </div>
-                      <span className="update-arrow">↓</span>
+                      <span className="update-arrow">â†“</span>
                     </div>
                   );
                 case 'downloading':
@@ -3147,12 +3351,12 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                 case 'downloaded':
                   return (
                     <div className="relaunch-update-card relaunch-update-card--downloaded" onClick={() => quitAndInstall()}>
-                      <span className="leaf-icon">🍃</span>
+                      <span className="leaf-icon">ðŸƒ</span>
                       <div className="update-card-text">
                         <span className="update-title">Relaunch to update</span>
                         <span className="update-version">v{version || '1.2.9'} ready to install</span>
                       </div>
-                      <span className="update-arrow">→</span>
+                      <span className="update-arrow">â†’</span>
                     </div>
                   );
                 case 'error':
@@ -3163,18 +3367,18 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                         <span className="update-title">Update Check Failed</span>
                         <span className="update-version">Click to try again</span>
                       </div>
-                      <span className="update-arrow">↻</span>
+                      <span className="update-arrow">â†»</span>
                     </div>
                   );
                 default:
                   return (
                     <div className="relaunch-update-card" onClick={() => checkForUpdates()}>
-                      <span className="leaf-icon">⚡</span>
+                      <span className="leaf-icon">âš¡</span>
                       <div className="update-card-text">
                         <span className="update-title">Check for updates</span>
                         <span className="update-version">v1.2.9 (Latest)</span>
                       </div>
-                      <span className="update-arrow">↻</span>
+                      <span className="update-arrow">â†»</span>
                     </div>
                   );
               }
@@ -3184,13 +3388,13 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
               <IconButton
                 icon={
                   updateStatus.status === 'downloaded' ? (
-                    <span>🍃</span>
+                    <span>ðŸƒ</span>
                   ) : updateStatus.status === 'downloading' || updateStatus.status === 'checking' ? (
                     <Loader2 size={16} className="animate-spin" />
                   ) : updateStatus.status === 'available' ? (
-                    <span>📥</span>
+                    <span>ðŸ“¥</span>
                   ) : (
-                    <span>⚡</span>
+                    <span>âš¡</span>
                   )
                 }
                 tooltip={
@@ -3230,7 +3434,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
               <div className="agents-chat__noproject-banner">
                 <FolderOpen size={14} />
                 <span>
-                  No folder selected — open a project so the agent can read &amp; edit your files. You can
+                  No folder selected â€” open a project so the agent can read &amp; edit your files. You can
                   keep chatting for general help.
                 </span>
                 <button
@@ -3306,7 +3510,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                       >
                         <MessageContent message={message} />
 
-                        {/* Work summary — collapsible steps/tools the agent used. */}
+                        {/* Work summary â€” collapsible steps/tools the agent used. */}
                         {message.toolCalls && message.toolCalls.length > 0 && (
                           <WorkSummary message={message} />
                         )}
@@ -3388,7 +3592,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                 );
               })}
 
-              {/* Live "working" indicator — spinner + ticking timer, with a
+              {/* Live "working" indicator â€” spinner + ticking timer, with a
                   collapsible panel showing what the agent is doing right now. */}
               {isGenerating && turnStartAt != null && (
                 <WorkingIndicator
@@ -3398,7 +3602,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                 />
               )}
 
-              {/* Queued messages — shadowed bubbles that promote to real turns. */}
+              {/* Queued messages â€” shadowed bubbles that promote to real turns. */}
               {queuedItems.map((item, i) => {
                 const headPromoteAt = queuedItems[0]?.promoteAt ?? null;
                 const eta =
@@ -3406,7 +3610,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                 const timerLabel =
                   eta != null
                     ? `Promotes in ${eta < 1000 ? (eta / 1000).toFixed(1) : Math.ceil(eta / 1000)}s`
-                    : 'Waiting for the agent to finish…';
+                    : 'Waiting for the agent to finishâ€¦';
                 return (
                   <article key={item.id} className="chat-msg chat-msg--queued" data-role="user">
                     <span className="chat-msg__avatar" aria-hidden="true">
@@ -3453,7 +3657,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
               <div ref={threadEndRef} />
             </div>
 
-            {/* Fleet pipeline — live view of the Director's auto-assigned run. */}
+            {/* Fleet pipeline â€” live view of the Director's auto-assigned run. */}
             <FleetPipeline />
 
             {/* Input Composer Area */}
@@ -3521,7 +3725,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                   className="composer-bar-dd"
                   menuPlacement="top"
                   searchable
-                  searchPlaceholder="Search providers…"
+                  searchPlaceholder="Search providersâ€¦"
                   value={activeProvider}
                   options={providerDropdownOptions}
                   onChange={handleProviderChange}
@@ -3531,7 +3735,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                 <button
                   type="button"
                   className={`composer-bar-btn ${followAgent ? 'is-active' : ''}`}
-                  title="Follow Agent — watch files & terminals live"
+                  title="Follow Agent â€” watch files & terminals live"
                   onClick={() => setFollowAgent((f) => !f)}
                 >
                   <Crosshair size={11} />
@@ -3542,7 +3746,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                 <button
                   type="button"
                   className={`composer-bar-btn ${fleetMode ? 'is-active' : ''}`}
-                  title="Run with Fleet — coordinate multiple specialist agents"
+                  title="Run with Fleet â€” coordinate multiple specialist agents"
                   onClick={() => setFleetMode((f) => !f)}
                 >
                   <Network size={11} />
@@ -3554,7 +3758,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                   <button
                     type="button"
                     className={`composer-bar-btn ${autoAccessEnabled ? 'is-active' : ''}`}
-                    title="Auto Access — run without approvals"
+                    title="Auto Access â€” run without approvals"
                     onClick={() => setIsAutoAccessOpen((o) => !o)}
                   >
                     <Zap size={11} />
@@ -3720,7 +3924,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                   </div>
 
                   <div className="composer-right-actions">
-                    {/* Model selector — grouped by provider */}
+                    {/* Model selector â€” grouped by provider */}
                     <ModelProviderDropdown
                       providers={providers}
                       dynamicModels={dynamicModels}
@@ -3767,7 +3971,7 @@ runCompletionTurn(activeSession.id, buildProviderHistory(cleanHistory), 0);
                     <div className="composer-send-btn-wrap">
                       {planning ? (
                         <Button variant="secondary" size="sm" disabled>
-                          Planning…
+                          Planningâ€¦
                         </Button>
                       ) : pendingPlan ? (
                         <div style={{ display: 'flex', gap: '4px' }}>
@@ -3992,7 +4196,7 @@ function SessionRow({
 /**
  * Live "Working" indicator shown at the start of a turn. Shows a ticking timer
  * and a downward toggle that reveals what the agent is composing right now
- * (its live, streamed text — effectively its in-the-moment plan/approach).
+ * (its live, streamed text â€” effectively its in-the-moment plan/approach).
  * The duration is naturally agent-driven: short for light tasks, longer for
  * substantial ones, because the agent plans-to-itself before replying/fixing.
  * Subscribes only to the throttled `liveText` so the message thread doesn't
@@ -4028,7 +4232,7 @@ function WorkingIndicator({
           {liveText.trim() ? (
             liveText
           ) : (
-            <span className="thinking-indicator__placeholder">Planning the approach…</span>
+            <span className="thinking-indicator__placeholder">Planning the approachâ€¦</span>
           )}
         </div>
       )}
@@ -4037,7 +4241,7 @@ function WorkingIndicator({
 }
 
 /**
- * Collapsible "Worked for Ns" summary inside a completed response — defaults to
+ * Collapsible "Worked for Ns" summary inside a completed response â€” defaults to
  * collapsed once the turn finishes; expands to reveal the tool steps used. While
  * the message is still streaming it stays open so progress is visible live.
  */
@@ -4058,7 +4262,7 @@ function WorkSummary({ message }: { message: ChatMessage }) {
     message.durationMs != null
       ? `Worked for ${formatDuration(message.durationMs)}`
       : isStreaming
-        ? 'Working…'
+        ? 'Workingâ€¦'
         : 'Work summary';
 
   return (
@@ -4087,7 +4291,7 @@ function WorkSummary({ message }: { message: ChatMessage }) {
 
 /**
  * Turn a raw tool call into a short, plain-language "saying" describing what
- * the agent is doing right now — so the bubble reads like a teammate narrating
+ * the agent is doing right now â€” so the bubble reads like a teammate narrating
  * its work ("Reading src/index.ts") instead of a raw command list.
  * `saying` is the one-line status; `verb` is a slightly fuller sentence shown
  * when the card is expanded.
@@ -4106,7 +4310,7 @@ function describeToolCall(call: ToolCall): { saying: string; verb: string } {
 
   const clip = (v: unknown, max = 52): string => {
     const s = String(v ?? '').replace(/\s+/g, ' ').trim();
-    return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+    return s.length > max ? `${s.slice(0, max - 1)}â€¦` : s;
   };
 
   const path = clip(args.path);
@@ -4234,7 +4438,7 @@ function ToolCallCard({ call }: { call: ToolCall }) {
             }}
           >
             <span className="tool-call-card__diff-add">+{call.diff.additions}</span>
-            <span className="tool-call-card__diff-del">−{call.diff.deletions}</span>
+            <span className="tool-call-card__diff-del">âˆ’{call.diff.deletions}</span>
           </span>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => setIsOpen(!isOpen)}>
@@ -4321,7 +4525,7 @@ const MessageContent = React.memo(function MessageContent({ message }: { message
                   </div>
                   <div className="pdf-card-details">
                     <span className="pdf-card-title" title={file}>{name}</span>
-                    <span className="pdf-card-subtitle">Document · PDF</span>
+                    <span className="pdf-card-subtitle">Document Â· PDF</span>
                   </div>
                   <div className="pdf-card-actions">
                     <button

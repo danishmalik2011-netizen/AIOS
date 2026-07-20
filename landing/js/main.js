@@ -493,4 +493,32 @@
     }, { rootMargin: '-45% 0px -50% 0px' });
     sections.forEach(s => sectionObserver.observe(s));
   }
+  // Handle URL hashes on load/change to show appropriate tab and scroll to it
+  function handleHashChange() {
+    const hash = window.location.hash;
+    if (hash === '#workspaces' || hash === '#docs') {
+      const mockupEl = document.querySelector('.mockup');
+      if (mockupEl) {
+        mockupEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
+      // Pause simulation
+      if (simTimer) {
+        clearTimeout(simTimer);
+        simTimer = null;
+        const simTxt = document.querySelector('.mockup__sim-text');
+        if (simTxt) simTxt.textContent = 'Simulation paused (Manual mode)';
+        const pulse = document.querySelector('.mockup__sim-pulse');
+        if (pulse) {
+          pulse.style.background = '#f59e0b';
+          pulse.style.boxShadow = '0 0 8px #f59e0b';
+        }
+      }
+      
+      activateTab(hash === '#workspaces' ? 'workspaces' : 'docs');
+    }
+  }
+  
+  window.addEventListener('hashchange', handleHashChange);
+  setTimeout(handleHashChange, 300);
 })();

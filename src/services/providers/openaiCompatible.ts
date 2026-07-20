@@ -186,7 +186,7 @@ export function createOpenAICompatibleDriver(config: CompatibleConfig): Provider
             model: req.model,
             messages,
             temperature: req.temperature ?? 0.7,
-            max_tokens: req.maxTokens ?? 1024,
+            max_tokens: req.maxTokens ?? 8192,
             ...(mode !== 'none' ? { tools } : {}),
             ...(mode === 'required'
               ? { tool_choice: 'required' }

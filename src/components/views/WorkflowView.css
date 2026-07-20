@@ -247,3 +247,66 @@
 .workflow-view__delete {
   width: 100%;
 }
+
+/* ---- Fleet Director goal input (GUI /plan + /run) ---- */
+.workflow-view__goal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px 3px 8px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2, rgba(124, 92, 255, 0.08));
+  border: 1px solid var(--border-subtle);
+}
+
+.workflow-view__goal-glyph {
+  color: var(--accent, #7c5cff);
+  flex: 0 0 auto;
+}
+
+.workflow-view__goal-input {
+  width: 240px;
+  max-width: 38vw;
+  border: none;
+  background: transparent;
+  color: var(--text-strong);
+  font-size: 13px;
+  padding: 4px 6px;
+}
+
+.workflow-view__goal-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ---- Live run status strip ---- */
+.workflow-view__runbar {
+  position: absolute;
+  top: calc(var(--space-4) + 60px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9;
+  width: min(560px, calc(100% - var(--space-8)));
+}
+
+/* ---- Plan panel (docked left) ---- */
+.workflow-view__plan-panel {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 11;
+  width: 340px;
+  max-width: calc(100% - var(--space-8));
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  display: flex;
+}
+
+.workflow-view__plan-panel .plan-view {
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}

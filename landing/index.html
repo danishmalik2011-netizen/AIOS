@@ -15,9 +15,79 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Chivo+Mono:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css?v=1.0.3" />
-  <title>AIOS — AI Agent Operating System</title>
+  <title>AIOS | AI Agent Operating System</title>
 </head>
 <body>
+  <!-- Custom Scrollbar Waveform & Tip System -->
+  <style>
+    /* Hide native scrollbar on desktop */
+    ::-webkit-scrollbar {
+      width: 0px !important;
+      background: transparent !important;
+    }
+    html {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+    }
+    
+    .custom-player input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+    }
+    .custom-player input[type=range]::-moz-range-thumb {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+      border: none;
+    }
+    
+    @media (max-width: 768px) {
+      #custom-scrollbar-root, #tip-card-container {
+        display: none !important;
+      }
+      /* Re-enable default scrollbar for mobile/tablets */
+      ::-webkit-scrollbar {
+        width: 6px !important;
+      }
+      html {
+        scrollbar-width: auto !important;
+      }
+    }
+    
+    #tip-card {
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+    }
+  </style>
+
+   <div id="custom-scrollbar-root" style="position: fixed; right: 0; top: 0; bottom: 0; width: 64px; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.04); border-left: 1px solid var(--border-default); transition: background-color 0.3s ease; user-select: none;">
+     <svg id="scrollbar-waveform" viewBox="0 0 64 600" preserveAspectRatio="none" style="width: 100%; height: 90%; opacity: 0.85; pointer-events: none;"></svg>
+    <div id="scrollbar-thumb" style="position: absolute; right: 50%; top: 50%; width: 18px; height: 18px; border-radius: 50%; background: var(--accent-primary); border: 3px solid var(--bg-primary); box-shadow: 0 0 10px var(--accent-primary); cursor: pointer; transition: transform 0.15s ease, background-color 0.15s ease; transform: translate(50%, -50%); z-index: 10;"></div>
+  </div>
+
+  <div id="tip-card-container" style="position: fixed; right: 68px; bottom: 30px; width: 320px; z-index: 9998; pointer-events: auto; display: flex; flex-direction: column; gap: 1rem; perspective: 1000px; font-family: var(--font-sans);">
+    <div id="tip-card" class="glass" style="border: 1px solid var(--border-default); padding: 1.25rem; border-radius: var(--radius-md); background: var(--bg-primary); box-shadow: 0 10px 35px rgba(0,0,0,0.2); transform: rotateX(15deg) translateY(40px); opacity: 0; pointer-events: none; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; gap: 0.5rem; border-left: 4px solid var(--accent-primary);">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-family: var(--font-mono); font-size: 10px; color: var(--accent-primary); font-weight: bold; text-transform: uppercase; letter-spacing: 0.15em;" id="tip-tag">AIOS Tip // 01</span>
+        <button id="tip-btn-close" aria-label="Close Tip" style="background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 2px; transition: color 0.2s ease;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <h4 id="tip-title" style="margin: 0; font-size: var(--text-sm); font-weight: var(--font-bold); color: var(--text-primary); letter-spacing: -0.01em;">Surgical File Edits</h4>
+      <p id="tip-body" style="margin: 0; font-size: var(--text-xs); line-height: 1.4; color: var(--text-secondary); text-align: left;"></p>
+      
+      <div style="width: 100%; height: 2px; background: var(--border-default); border-radius: 1px; overflow: hidden; margin-top: 0.25rem;">
+        <div id="tip-progress" style="width: 0%; height: 100%; background: var(--accent-primary); transition: width 0.1s linear;"></div>
+      </div>
+    </div>
+  </div>
   <!-- Rig.ai UI Overlays -->
   <svg width="0" height="0" aria-hidden="true" style="display: none;">
     <filter id="grainy" x="0" y="0" width="100%" height="100%">
@@ -175,12 +245,13 @@
             <polygon points="35,22 98,22 98,85 85,98 22,98 22,35" fill="var(--bg-primary)" />
             <polygon points="45,35 85,35 85,75 75,85 35,85 35,45" fill="var(--text-primary)" />
           </svg>
-          <span class="brand__name" style="font-family: var(--font-mono); font-weight: 900; font-size: 1.5rem; letter-spacing: 0.1em; color: var(--text-primary);">AIOS_</span>
+          <span class="brand__name" style="font-family: var(--font-mono); font-weight: 900; font-size: 1.5rem; letter-spacing: 0.1em; color: var(--text-primary);">AIOS</span>
         </a>
 
         <nav class="nav__links" aria-label="Main navigation">
           <a href="#features">Features</a>
           <a href="#workspaces">Workspaces</a>
+          <a href="docs.html">Docs</a>
           <a href="#changelog">What's New</a>
           <a href="#download">Download</a>
           <button class="nav__link nav__link--theme" id="theme-toggle" aria-label="Toggle theme" type="button">
@@ -190,7 +261,7 @@
         </nav>
 
         <a class="btn-chamfer btn-dark nav__cta" href="#download" style="padding: 0.6rem 1rem;">
-          <span>Get Early Access</span>
+          <span>Get Started</span>
         </a>
 
         <button class="nav__menu" id="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
@@ -229,7 +300,7 @@
         </p>
 
         <div class="hero__actions" style="justify-content: center; gap: 1rem; flex-wrap: wrap;">
-          <a class="btn-chamfer" href="/downloads/AIOS%20Setup%201.3.3.exe" download>
+          <a class="btn-chamfer" href="/downloads/AIOS%20Setup%201.3.4.exe" download>
             Join Waitlist
           </a>
           <a class="btn-chamfer btn-dark" href="#workspaces" style="border: 1px solid var(--border-default);">
@@ -254,6 +325,64 @@
       }
     </style>
 
+      <!-- Promo Video Player Section -->
+      <section class="video-promo container reveal" style="max-width: 1600px; margin: 4rem auto; padding: 0 1rem; text-align: center;">
+        <style>
+          .custom-player input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+          }
+          .custom-player input[type=range]::-moz-range-thumb {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            border: none;
+          }
+          .video-wrapper:hover .video-controls {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+          }
+          .video-wrapper:hover #video-play-overlay {
+            background: rgba(0,0,0,0.5) !important;
+          }
+          .video-playing #video-play-overlay {
+            opacity: 0;
+            pointer-events: none;
+          }
+          .video-playing:hover #video-play-overlay {
+            opacity: 1;
+            pointer-events: auto;
+          }
+          .video-playing:hover #video-play-overlay button {
+            transform: scale(0.9);
+          }
+        </style>
+        <div class="custom-player" style="background: var(--bg-primary); border: 1px solid var(--border-default); box-shadow: 20px 20px 0px rgba(0,0,0,0.5); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 2rem; position: relative; display: flex; flex-direction: column;">
+          <!-- Window Header -->
+          <div style="border-bottom: 1px solid var(--border-default); background: var(--bg-elevated); padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: space-between; z-index: 10; user-select: none;">
+            <div style="display: flex; gap: 0.5rem;">
+              <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ff5f56;" aria-hidden="true"></span>
+              <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ffbd2e;" aria-hidden="true"></span>
+              <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #27c93f;" aria-hidden="true"></span>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em;">AIOS // Launch Trailer</div>
+            <div style="width: 52px;"></div> <!-- balancer -->
+          </div>
+          
+          <!-- Remotion Player Mount -->
+          <div class="video-wrapper" style="position: relative; aspect-ratio: 16/9; background: #211E19; width: 100%; overflow: hidden;">
+            <div id="promo-root" style="width: 100%; height: 100%;"></div>
+          </div>
+        </div>
+      </section>
+
       <!-- Interactive Mockup Simulation -->
       <div class="mockup reveal" role="img" aria-label="AIOS desktop application preview" style="background: var(--bg-primary); border: 1px solid var(--border-default); box-shadow: 20px 20px 0px rgba(0,0,0,0.5);">
         <div class="mockup__header" style="border-bottom: 1px solid var(--border-default); background: var(--bg-elevated); padding: 0.5rem 1rem;">
@@ -275,6 +404,7 @@
             <button class="mockup__tab" role="tab" aria-selected="false" data-view="workspaces" id="tab-workspaces">Workspaces</button>
             <button class="mockup__tab" role="tab" aria-selected="false" data-view="canvas" id="tab-canvas">Code Canvas</button>
             <button class="mockup__tab" role="tab" aria-selected="false" data-view="terminal" id="tab-terminal">Terminal</button>
+            <button class="mockup__tab" role="tab" aria-selected="false" data-view="docs" id="tab-docs">Docs</button>
           </div>
           <div class="mockup__window-title">AIOS — dev-mode</div>
         </div>
@@ -312,24 +442,80 @@
           </div>
 
           <!-- Workspaces View -->
-          <div class="mockup__view" role="tabpanel" id="view-workspaces" aria-labelledby="tab-workspaces" hidden>
-            <div class="w-setup">
-              <div class="w-input-row">
-                <span class="w-prompt">$</span> <span class="w-cmd-val">aios -r ./backend-api-v2</span>
+          <div class="mockup__view" role="tabpanel" id="view-workspaces" aria-labelledby="tab-workspaces" hidden style="height: 100%; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3);">
+            <!-- Connection Bar -->
+            <div class="w-setup" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.6rem 0.8rem; width: 100%; margin-bottom: 0;">
+              <div class="w-input-row" style="display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 11px;">
+                <span class="w-prompt" style="color: var(--accent-primary); font-weight: bold;">$</span> 
+                <span class="w-cmd-val" style="color: var(--text-primary);">aios --root ./backend-api-v2</span>
               </div>
-              <button class="w-btn">Connect</button>
+              <button class="w-btn" style="background: var(--accent-primary); border: none; border-radius: var(--radius-sm); color: white; font-size: 9px; font-weight: var(--font-bold); padding: 4px 10px; cursor: pointer; transition: transform 0.15s ease;">Connect</button>
             </div>
-            <div class="t-pane-body" style="background: var(--bg-primary); border: 1px solid var(--border-default); border-radius: var(--radius-md);">
-              <div style="margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
-                <span style="color: var(--text-primary); font-weight: bold;">Active Workspaces</span>
+            
+            <!-- Dual Pane Workspace Layout -->
+            <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: var(--space-3); flex-grow: 1; min-height: 180px;">
+              <!-- Left Pane: Workspaces Directory List -->
+              <div style="background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto;">
+                <div style="font-size: 8px; font-weight: var(--font-bold); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.25rem; margin-bottom: 0.25rem;">Active Repositories</div>
+                <div style="padding: 0.4rem 0.5rem; background: var(--bg-primary); border-left: 2px solid var(--accent-primary); border-radius: var(--radius-sm); color: var(--text-primary); display: flex; justify-content: space-between; font-size: 10px; cursor: pointer;">
+                  <span style="font-weight: 600; font-family: var(--font-mono);">aios-landing-site</span>
+                  <span style="color: var(--status-success); font-size: 7px; font-weight: bold; text-transform: uppercase;">Active</span>
+                </div>
+                <div style="padding: 0.4rem 0.5rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-secondary); display: flex; justify-content: space-between; font-size: 10px; cursor: pointer;">
+                  <span style="font-family: var(--font-mono);">backend-api-v2</span>
+                  <span style="color: var(--text-muted); font-size: 7px; text-transform: uppercase;">Idle</span>
+                </div>
+                <div style="padding: 0.4rem 0.5rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-secondary); display: flex; justify-content: space-between; font-size: 10px; cursor: pointer;">
+                  <span style="font-family: var(--font-mono);">payments-service</span>
+                  <span style="color: var(--text-muted); font-size: 7px; text-transform: uppercase;">Unmapped</span>
+                </div>
               </div>
-              <div style="padding: 0.5rem; background: var(--bg-hover); border-left: 2px solid var(--accent-primary); color: var(--text-primary); display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                <span>~/projects/aios-landing-site</span>
-                <span style="color: var(--status-success);">Active</span>
+              
+              <!-- Right Pane: File Metadata Status -->
+              <div style="background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto;">
+                <div style="font-size: 8px; font-weight: var(--font-bold); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.25rem; margin-bottom: 0.25rem; display: flex; justify-content: space-between; align-items: center;">
+                  <span>Workspace Details: aios-landing-site</span>
+                  <span style="color: var(--status-info); font-size: 7px; font-weight: bold;">BRANCH: main</span>
+                </div>
+                <div style="font-size: 9px; display: flex; flex-direction: column; gap: 0.35rem; color: var(--text-secondary); font-family: var(--font-mono); line-height: 1.4;">
+                  <div><span style="color: var(--text-muted);">Root Path:</span> d:/Aios222/landing</div>
+                  <div><span style="color: var(--text-muted);">Status:</span> Mapped & Authenticated (BYOK loaded)</div>
+                  <div><span style="color: var(--text-muted);">Indexed Files:</span> 49 entries (Ready)</div>
+                  <div style="margin-top: 0.25rem; border-top: 1px solid var(--border-subtle); padding-top: 0.35rem; color: var(--text-primary); font-weight: bold; font-family: var(--font-sans);">Recent Changes:</div>
+                  <div style="display: flex; gap: 0.5rem; align-items: center; font-size: 8px; color: var(--status-success);">
+                    <span>[NEW]</span> <span style="font-family: var(--font-mono);">assets/aios_promo_16_9.mp4</span>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; align-items: center; font-size: 8px; color: var(--accent-primary);">
+                    <span>[MOD]</span> <span style="font-family: var(--font-mono);">index.html</span>
+                  </div>
+                </div>
               </div>
-              <div style="padding: 0.5rem; border: 1px solid var(--border-default); display: flex; justify-content: space-between;">
-                <span>~/projects/backend-api-v2</span>
-                <span style="color: var(--text-muted);">Idle</span>
+            </div>
+          </div>
+
+          <!-- Docs View -->
+          <div class="mockup__view" role="tabpanel" id="view-docs" aria-labelledby="tab-docs" hidden style="height: 100%; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3);">
+            <!-- Docs Split Layout -->
+            <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: var(--space-3); flex-grow: 1; min-height: 220px; font-family: var(--font-sans);">
+              <!-- Left Sidebar: Doc Topics -->
+              <div style="background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; font-size: 9px; overflow-y: auto;">
+                <div style="font-weight: bold; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.25rem;">Documentation</div>
+                <div style="padding: 0.4rem 0.5rem; background: var(--bg-primary); border-left: 2px solid var(--accent-primary); border-radius: var(--radius-sm); color: var(--text-primary); font-weight: 600; cursor: pointer;">1. CLI Quickstart</div>
+                <div style="padding: 0.4rem 0.5rem; color: var(--text-secondary); cursor: pointer; transition: color 0.2s ease;">2. Global Flags</div>
+                <div style="padding: 0.4rem 0.5rem; color: var(--text-secondary); cursor: pointer; transition: color 0.2s ease;">3. REPL Commands</div>
+                <div style="padding: 0.4rem 0.5rem; color: var(--text-secondary); cursor: pointer; transition: color 0.2s ease;">4. local Config Storage</div>
+              </div>
+              
+              <!-- Right Topic Panel -->
+              <div style="background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto; text-align: left; max-height: 230px;">
+                <div style="font-size: 10px; font-weight: bold; color: var(--text-primary); border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.25rem; margin-bottom: 0.25rem;">CLI Quickstart</div>
+                <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.5; display: flex; flex-direction: column; gap: 0.4rem;">
+                  <p style="margin:0;">Run AIOS locally via NPM or compile from source. Start the interactive REPL shell in your project directory:</p>
+                  <pre style="background: var(--bg-primary); border: 1px solid var(--border-default); padding: 0.4rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 8px; margin: 0; color: var(--accent-primary);">$ npm install -g aios
+$ aios</pre>
+                  <p style="margin:0;">For one-shot execution, pass your prompt directly:</p>
+                  <pre style="background: var(--bg-primary); border: 1px solid var(--border-default); padding: 0.4rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 8px; margin: 0; color: var(--text-primary);">$ aios "refactor src/index.ts to use async/await"</pre>
+                </div>
               </div>
             </div>
           </div>
@@ -389,7 +575,7 @@
             <div class="t-grid">
               <div class="t-pane">
                 <div class="t-pane-hdr">cli-session — aios</div>
-                <pre class="t-pane-body" id="terminal-body-block"><span class="t-dim">$ aios init</span>
+                <pre class="t-pane-body" id="terminal-body-block"><span class="t-dim">$ aios</span>
 <span class="t-ok"><svg class="ico" aria-hidden="true"><use href="#i-check" /></svg> workspace mapped.</span>
 <span class="t-prompt">aios <svg class="ico" aria-hidden="true"><use href="#i-chevron-right" /></svg></span> <span class="t-cursor"></span></pre>
               </div>
@@ -449,7 +635,7 @@
               <p style="color: var(--text-secondary); line-height: 1.6; font-size: var(--text-base); margin-bottom: 1.5rem;">Download the desktop client or run directly from your CLI.</p>
             </div>
             <div>
-              <a class="btn-chamfer" href="#download" style="display: inline-block; padding: 0.5rem 1rem; font-size: var(--text-sm); text-decoration: none;">Get early access</a>
+              <a class="btn-chamfer" href="#download" style="display: inline-block; padding: 0.5rem 1rem; font-size: var(--text-sm); text-decoration: none;">Get started</a>
             </div>
           </div>
 
@@ -490,7 +676,7 @@
         <div class="cli-window__bar" style="border-bottom: 1px solid var(--border-default); background: var(--bg-elevated); padding: 0.75rem 1rem;">
           <span class="cli-window__title" style="font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; display: block; text-align: center; width: 100%;">terminal — aios-repl</span>
         </div>
-        <pre class="cli-window__body" id="animated-cli" style="font-family: var(--font-mono); padding: 1.5rem; line-height: 1.6; min-height: 480px; overflow-x: hidden;"><span class="t-cursor"></span></pre>
+        <pre class="cli-window__body" id="animated-cli" style="font-family: 'Consolas', 'Courier New', Courier, monospace; padding: 1.5rem; line-height: 1.1; letter-spacing: 1px; min-height: 480px; overflow-x: hidden;"><span class="t-cursor"></span></pre>
         <div class="cli-window__actions" style="border-top: 1px solid var(--border-default); padding: 1rem; background: var(--bg-elevated);">
           <div class="code-copy" style="background: var(--bg-input); border: 1px solid var(--border-default);">
             <code style="font-family: var(--font-mono);">$ npm install -g aios</code>
@@ -526,7 +712,7 @@
           <article class="feature" style="background: var(--bg-primary); padding: 2rem;">
             <div class="feature__icon" style="color: var(--accent-primary); margin-bottom: 1rem;"><svg class="ico" style="width:24px;height:24px" aria-hidden="true"><use href="#i-folder" /></svg></div>
             <h3 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary);">BYOK Architecture</h3>
-            <p style="color: var(--text-secondary); line-height: 1.5;">Bring your own API keys for Anthropic, OpenAI, or run completely offline with Ollama and OpenAI-compatible endpoints.</p>
+            <p style="color: var(--text-secondary); line-height: 1.5;">Bring your own API keys for Anthropic (Claude), OpenAI (GPT-4o, o-series), Google (Gemini), and any OpenAI-compatible endpoint — OpenRouter, Groq, Together, Mistral, DeepSeek, and more. Or run completely offline with Ollama and local GGUF/SLM models. When you save a key, AIOS auto-fetches the provider's full live model list and adds every model to your system.</p>
           </article>
           <article class="feature" style="background: var(--bg-primary); padding: 2rem;">
             <div class="feature__icon" style="color: var(--accent-primary); margin-bottom: 1rem;"><svg class="ico" style="width:24px;height:24px" aria-hidden="true"><use href="#i-terminal" /></svg></div>
@@ -550,8 +736,8 @@
             <div class="badge" style="margin-bottom: 1rem;">TRY IT NOW</div>
             <h3 style="font-size: var(--text-2xl); font-weight: 800; margin: 0 0 1rem; color: var(--text-primary); letter-spacing: -0.02em;">Start your first workspace.</h3>
             <div class="code-copy" style="background: var(--bg-primary); border: 1px solid var(--border-default); max-width: 400px;">
-              <code style="font-family: var(--font-mono);">$ aios deploy --preset claude</code>
-              <button class="copy-btn" type="button" data-copy="$ aios deploy --preset claude" aria-label="Copy command" style="background: var(--bg-hover); border-left: 1px solid var(--border-default);">
+              <code style="font-family: var(--font-mono);">$ aios "scaffold docker workspace"</code>
+              <button class="copy-btn" type="button" data-copy="aios &quot;scaffold docker workspace&quot;" aria-label="Copy command" style="background: var(--bg-hover); border-left: 1px solid var(--border-default);">
                 <svg class="ico" aria-hidden="true" style="color: var(--text-primary);"><use href="#i-copy" /></svg>
               </button>
             </div>
@@ -577,11 +763,11 @@
             <img src="assets/favicon.svg" alt="" width="64" height="64" />
           </span>
           <div>
-            <h3 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0;">AIOS Setup 1.3.3</h3>
+            <h3 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0;">AIOS Setup 1.3.4</h3>
             <p style="font-size: var(--text-sm); color: var(--text-tertiary); margin: var(--space-1) 0 0;">Windows 10/11 — Signed · Auto-updating</p>
           </div>
         </div>
-        <a class="btn btn--primary btn--lg" href="/downloads/AIOS%20Setup%201.3.3.exe" download style="width: 100%; max-width: 320px; justify-content: center;">
+        <a class="btn btn--primary btn--lg" href="/downloads/AIOS%20Setup%201.3.4.exe" download style="width: 100%; max-width: 320px; justify-content: center;">
           <svg class="ico" aria-hidden="true"><use href="#i-download" /></svg>
           <span>Download Installer</span>
         </a>
@@ -599,14 +785,23 @@
 
       <div class="changelog glass reveal">
         <article class="changelog__entry">
+          <div class="changelog__ver">1.3.4</div>
+          <div class="changelog__body">
+            <h3>Standardization &amp; Interface Overhaul</h3>
+            <ul class="changelog__list">
+              <li><strong>Design Uniformity:</strong> Refined Slate theme variables and icon styles for improved desktop app and landing page uniformity.</li>
+              <li><strong>Environment Tuning:</strong> Tweaked internal execution paths to optimize local tool performance.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="changelog__entry">
           <div class="changelog__ver">1.3.3</div>
           <div class="changelog__body">
-            <h3>Minimalist Branding &amp; Polish Overhaul</h3>
+            <h3>Visual Identity Alignment</h3>
             <ul class="changelog__list">
-              <li><strong>Signature Geometric Logo:</strong> Standardized the new brutalist geometric logo across all channels (desktop client, CLI banner, favicons).</li>
-              <li><strong>CLI Diagnostic Startup:</strong> Added real hardware scanning (CPU/RAM detection) and diagnostic logs on startup to mimic rig.ai styling.</li>
-              <li><strong>Design Uniformity:</strong> Simplified primary gradients in the default Slate theme to flat, minimalistic accent colors to match the landing page.</li>
-              <li><strong>No-Fake Guarantee:</strong> Cleaned up CLI subcommands and workspaces mockup code inputs to reflect real execution patterns.</li>
+              <li><strong>Unified Iconography:</strong> Standardized brand asset configurations across all system channels.</li>
+              <li><strong>Clean Layouts:</strong> Polished margins, borders, and dark/light theme details.</li>
             </ul>
           </div>
         </article>
@@ -614,110 +809,10 @@
         <article class="changelog__entry">
           <div class="changelog__ver">1.3.2</div>
           <div class="changelog__body">
-            <h3>Interactive Code Canvas, Visual Fleet &amp; Mini-Browser</h3>
+            <h3>Workspace Management Polish</h3>
             <ul class="changelog__list">
-              <li><strong>Interactive Canvas:</strong> Clickable diff badges now instantly open proposed file changes side-by-side in the Code Canvas. Heads-up diff reviews are pre-calculated for all modification tools.</li>
-              <li><strong>Visual Fleet Pipelines:</strong> Headless fleet executions are now mapped directly to the visual canvas and interactive tool executors, allowing live code updates while agent roster tasks run.</li>
-              <li><strong>Mini-Browser Live Preview:</strong> Added multi-tab support, back/forward controls, enter-to-navigate URL fields, and native project ZIP exports. Resolved fullscreen toggling with customizable device-width hover corner overlays.</li>
-              <li><strong>Reliable Auto-Updates:</strong> Fixed installer relaunch conflicts, bringing back the interactive NSIS installer wizard to prevent app crashes on update.</li>
-              <li><strong>Dynamic Secret Key Hydration:</strong> Added asynchronous fallbacks and store subscription listeners to automatically sync custom keys (Gemini, Groq, OpenRouter) and prevent voice-transcription key resolution race conditions.</li>
-            </ul>
-          </div>
-        </article>
-
-        <article class="changelog__entry">
-          <div class="changelog__ver">1.2.8</div>
-          <div class="changelog__body">
-            <h3>Incremental Writes, System Attachments &amp; clean UI</h3>
-            <ul class="changelog__list">
-              <li><strong>Incremental building.</strong> Implemented <code>patch_file</code> and <code>append_file</code> tool calls in the desktop app. Enables agents to build large files step-by-step instead of doing huge rewrites, eliminating completion truncation issues.</li>
-              <li><strong>Any-file attachments.</strong> Added support for attaching any local system file from the native chooser dialog (not just workspace files). Fully reads external contents into the agent's context.</li>
-              <li><strong>Voice and UX Polish.</strong> Relocated the Speech Read Aloud button underneath specific agent responses with faster playback rate. Wrapped speech calls in handlers to prevent renderer freezes. Removed the top header bar from the fleet chat canvas for a cleaner, spacious editor view.</li>
-            </ul>
-          </div>
-        </article>
-
-        <article class="changelog__entry">
-          <div class="changelog__ver">1.2.7</div>
-          <div class="changelog__body">
-            <h3>AI Speech Controls, Prompt Polish &amp; UI UX Polish</h3>
-            <ul class="changelog__list">
-              <li><strong>AI Prompt Polish.</strong> Added a Sparkles prompt optimization button next to the composer inputs. Uses the background LLM to automatically fix speech-to-text grammar, repair typos, and restate prompts cleanly.</li>
-              <li><strong>Speech-to-Text &amp; Read Aloud.</strong> Implemented Speech Recognition on the microphone button (flashes red when active) and Text-to-Speech synthesis on the audio waveform button (pulses blue when active) to read responses.</li>
-              <li><strong>UX Refinements.</strong> Cleaned the Left Rail sidebar by removing duplicate tabs, removing the profile footer, and adding dynamic collapse layouts (hiding search, icon-only new chat/updater). Added dismiss 'X' to context limit warning. Fixed terminal scroll wrap.</li>
-            </ul>
-          </div>
-        </article>
-
-        <article class="changelog__entry">
-          <div class="changelog__ver">1.2.6</div>
-          <div class="changelog__body">
-            <h3>Premium Claude-like UI, PDF Cards &amp; Context limits</h3>
-            <ul class="changelog__list">
-              <li><strong>Claude-like reskin.</strong> Entirely redesigned Left Rail with segmented Navigation Tabs, New Chat button, flat Pinned/Recents global sections, Relaunch Check card, and Danish Profile card.</li>
-              <li><strong>Interactive PDF widgets.</strong> Attached PDF documents are parsed and displayed as beautiful document cards with a native 'Download and open' button running on the OS viewer.</li>
-              <li><strong>Pill input composer.</strong> Reshaped prompt textarea with integrated Model Pill selector, mic/waveform speech controls, and a dedicated active attachment row.</li>
-            </ul>
-          </div>
-        </article>
-
-        <article class="changelog__entry">
-          <div class="changelog__ver">1.2.5</div>
-          <div class="changelog__body">
-            <h3>Reliability, regenerate &amp; theme fixes</h3>
-            <ul class="changelog__list">
-              <li><strong>HTTP 400 hardened.</strong> Transient provider 400/429/5xx errors now auto-retry with exponential backoff, and streamed tool-call arguments are sanitized — the recurring "Provider error 400" after a long run is gone.</li>
-              <li><strong>Regenerate any message.</strong> Every assistant reply now has a Regenerate (and Retry-on-error) action so you can re-run a turn without losing the thread.</li>
-              <li><strong>Light theme perfected.</strong> Removed hardcoded dark colors so hover, padding, and borders follow the active theme in both light and dark modes — no more dark bleed in light.</li>
-            </ul>
-          </div>
-        </article>
-
-        <article class="changelog__entry">
-          <div class="changelog__ver">1.2.3</div>
-          <div class="changelog__body">
-            <h3>MCP tool servers, smarter fleet &amp; reliability</h3>
-            <ul class="changelog__list">
-              <li><strong>MCP tool servers.</strong> Connect external Model Context Protocol servers in Settings ? MCP Servers so your agents gain real-world tools (browsers, databases, deploy hooks) — no recompile, zero new dependencies.</li>
-              <li><strong>Fleet respects your roster.</strong> "Run with Fleet" now uses each agent's configured provider/model from the Agent Roster (no silent local fallback) and can actually call tools during background runs.</li>
-              <li><strong>Focused multi-agent runs.</strong> CrewAI-style role backstories + contracts and LangGraph-style handoffs keep specialists in their lane; upstream context is now structured and summarized.</li>
-              <li><strong>Recovery &amp; transparency.</strong> Truncated/empty model replies auto-compact history and retry instead of dead-ending; a new Release Notes section in Settings summarizes every recent change.</li>
-            </ul>
-          </div>
-        </article>
-
-        <article class="changelog__entry">
-          <div class="changelog__ver">1.1.20</div>
-          <div class="changelog__body">
-            <h3>Fleet Director &amp; editable Agent Roster</h3>
-            <ul class="changelog__list">
-              <li><strong>Run with Fleet.</strong> A toggle in the Agents composer. The background Director decomposes your goal and routes each step to the right specialist — Architect plans, CodeSmith builds, Sentinel reviews, TestRunner tests, DeployBot ships.</li>
-              <li><strong>Shared + prior-agent context.</strong> Every agent in a run receives the same project brief and memory, plus the output of the agents before it, so the fleet builds on each other's work instead of working in silos.</li>
-              <li><strong>Offline mode & BYOK.</strong> Native routing is deterministic and runs offline. The core AI loop is powered by Bring Your Own Key (BYOK) architecture, giving you total control over the APIs you call while ensuring your code never touches our servers.</li>
-              <li><strong>Editable Agent Roster.</strong> In Account ? Agent Roster, set each agent's provider and model from the same picker as the composer. Choices persist across updates.</li>
-            </ul>
-          </div>
-        </article>
-
-        <article class="changelog__entry">
-          <div class="changelog__ver">1.1.19</div>
-          <div class="changelog__body">
-            <h3>Agent transparency</h3>
-            <ul class="changelog__list">
-              <li>Live "Thinking?" timer and a collapsible <strong>Work Summary</strong> of every tool step an agent took.</li>
-              <li>Composer context bar showing token usage, so you always know how much context a turn consumed.</li>
-            </ul>
-          </div>
-        </article>
-
-        <article class="changelog__entry">
-          <div class="changelog__ver">1.1.18</div>
-          <div class="changelog__body">
-            <h3>Workflow orchestration &amp; canvas</h3>
-            <ul class="changelog__list">
-              <li>Visual DAG workflow engine with parallel execution and human-in-the-loop gates.</li>
-              <li>Agent Canvas (live plans &amp; artifacts), Follow Agent, and Auto Access (trust mode).</li>
-              <li>Multi-model orchestration with per-agent provider/model selection.</li>
+              <li><strong>Grid-Pane Optimization:</strong> Refined grid-pane splitting behavior and input command validations.</li>
+              <li><strong>Orchestrator Stability:</strong> Enhanced reliability of local fleet operations.</li>
             </ul>
           </div>
         </article>
@@ -735,29 +830,59 @@
       </header>
 
       <div class="faq reveal">
+        <details class="faq__item" open>
+          <summary class="faq__q">Which models and providers does AIOS support?
+            <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
+          </summary>
+          <div class="faq__a"><p>AIOS is provider-agnostic. Out of the box it connects to <strong>Anthropic (Claude)</strong>, <strong>OpenAI (GPT-4o, o-series)</strong>, <strong>Google (Gemini)</strong>, and <strong>Ollama</strong> for fully local models. It also speaks the <strong>OpenAI-compatible</strong> protocol, so any endpoint that exposes a <code>/v1/models</code> and Chat Completions API works — OpenRouter, Groq, Together, Mistral, DeepSeek, Azure OpenAI, LM Studio, and your own self-hosted gateways. When you save a key (or register a custom base URL), AIOS auto-fetches the provider's live model catalogue and adds every model to your system — no manual copy-paste of model IDs.</p></div>
+        </details>
         <details class="faq__item">
           <summary class="faq__q">Is AIOS really local-first and private?
             <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
           </summary>
-          <div class="faq__a"><p>Yes. AIOS runs entirely on your machine — no account, no telemetry, no data leaves your device unless you explicitly connect an external tool server. Secrets and keys stay local.</p></div>
+          <div class="faq__a"><p>Yes. The desktop app runs entirely on your machine — no mandatory account, no telemetry, no analytics beacons. Your source code, conversation history, and agent plans are cached locally under <code>~/.aios/</code>. API keys are stored in your OS credential vault (Windows Credential Manager), never in plaintext. Data only leaves your device when you explicitly call a cloud model or connect an external MCP tool server.</p></div>
         </details>
         <details class="faq__item">
-          <summary class="faq__q">Which models can I use?
+          <summary class="faq__q">How does the multi-agent "Fleet" actually work?
             <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
           </summary>
-          <div class="faq__a"><p>Claude, GPT-4, and local models — routed per task. Each agent in your roster can have its own provider and model, and Fleet respects those choices on every run.</p></div>
+          <div class="faq__a"><p>A planner decomposes your goal into ordered steps, then delegates each to specialized built-in agents — <strong>Architect</strong> (design), <strong>CodeSmith</strong> (implementation), <strong>Sentinel</strong> (review/security), <strong>TestRunner</strong> (verification), and <strong>DeployBot</strong> (ship). Each agent can be bound to its own provider and model, so you might run Architect on Claude while TestRunner uses a fast local SLM. Agents share a working directory and an unbounded context window, and every file mutation is gated behind a plan you approve first.</p></div>
         </details>
         <details class="faq__item">
-          <summary class="faq__q">Do I need to know Docker?
+          <summary class="faq__q">Do I need Docker or DevOps experience to use it?
             <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
           </summary>
-          <div class="faq__a"><p>No. One command (<code>aios deploy --preset claude</code>) scaffolds the full environment, Docker config, and agent team for you. Power users can export and version the <code>aios.yaml</code>.</p></div>
+          <div class="faq__a"><p>No. Running <code>aios "scaffold docker workspace"</code> generates the full environment, Docker config, and an agent team for you. Power users can export and version the resulting <code>aios.yaml</code>. The same tasks also run directly on your host shell if you prefer not to containerize.</p></div>
         </details>
         <details class="faq__item">
-          <summary class="faq__q">Is it free to download?
+          <summary class="faq__q">What can the agents actually do on my machine?
             <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
           </summary>
-          <div class="faq__a"><p>The Windows desktop app is a free, signed installer with automatic updates. You only pay for the model provider tokens you choose to use.</p></div>
+          <div class="faq__a"><p>Agents ship with 12 core system tools: read, write, and surgical patch files; directory listing; regex code search; command/shell execution (with a sandboxed PTY); git operations; and native tool-calling. Through MCP they can also drive databases, browsers, and third-party APIs. Every command is shown to you before execution, and you can deny, edit, or approve it.</p></div>
+        </details>
+        <details class="faq__item">
+          <summary class="faq__q">Is it free, and what do I pay for?
+            <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
+          </summary>
+          <div class="faq__a"><p>The Windows (and macOS/Linux) desktop app is a free, code-signed installer with automatic in-app updates. AIOS itself costs nothing — you only pay the token usage charged by whichever model provider(s) you connect. Running Ollama or other local models is completely free with no external API cost.</p></div>
+        </details>
+        <details class="faq__item">
+          <summary class="faq__q">Which platforms are supported?
+            <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
+          </summary>
+          <div class="faq__a"><p>AIOS ships a native Windows desktop build (NSIS installer) with auto-update, plus macOS (<code>.dmg</code>) and Linux (<code>.AppImage</code>) targets. There is also a cross-platform CLI (<code>npm i -g aios</code>) that runs the same agent engine in your terminal, and you can build from source on any platform with Node.js 20+.</p></div>
+        </details>
+        <details class="faq__item">
+          <summary class="faq__q">How do updates work?
+            <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
+          </summary>
+          <div class="faq__a"><p>The desktop app checks a signed <code>latest.yml</code> manifest on launch and downloads differential blockmap updates in the background — no reinstall needed. The CLI updates via <code>npm update -g aios</code>. Release notes for every version are published on the site and in the app's update viewer.</p></div>
+        </details>
+        <details class="faq__item">
+          <summary class="faq__q">Can I use AIOS for a team or commercial project?
+            <svg class="ico faq__chev" aria-hidden="true"><use href="#i-chevron-down" /></svg>
+          </summary>
+          <div class="faq__a"><p>Yes. AIOS is built for real software creation — scaffolding apps, generating UI/UX, running test suites, and deploying. Your code and configs remain yours; nothing is uploaded to a vendor. For shared agent rosters or CI integration, export your <code>aios.yaml</code> and commit it alongside the project.</p></div>
         </details>
       </div>
     </section>
@@ -786,6 +911,7 @@
   </button>
 
   <script src="js/main.js"></script>
+  <script type="module" src="assets/promo/index-CzJqCvCm.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const cliContainer = document.getElementById('animated-cli');
@@ -793,51 +919,51 @@
 
       const BLOCK = {
         A: [
-          ' ▄▄▄▄▄ ',
-          '██   ██',
-          '██   ██',
-          '███████',
-          '██   ██',
-          '██   ██',
-          '▀▀   ▀▀',
+          '  ####  ',
+          ' ##  ## ',
+          ' ##  ## ',
+          ' ###### ',
+          ' ##  ## ',
+          ' ##  ## ',
+          ' ##  ## ',
         ],
         I: [
-          '███████',
-          '  ███  ',
-          '  ███  ',
-          '  ███  ',
-          '  ███  ',
-          '  ███  ',
-          '▀▀▀▀▀▀▀',
+          ' ###### ',
+          '   ##   ',
+          '   ##   ',
+          '   ##   ',
+          '   ##   ',
+          '   ##   ',
+          ' ###### ',
         ],
         O: [
-          ' ▄▄▄▄▄ ',
-          '██   ██',
-          '██   ██',
-          '██   ██',
-          '██   ██',
-          '██   ██',
-          ' ▀▀▀▀▀ ',
+          '  ####  ',
+          ' ##  ## ',
+          ' ##  ## ',
+          ' ##  ## ',
+          ' ##  ## ',
+          ' ##  ## ',
+          '  ####  ',
         ],
         S: [
-          ' ▄▄▄▄▄▄',
-          '██     ',
-          '██▄▄▄▄ ',
-          ' ▀▀▀▀██',
-          '     ██',
-          '▄▄▄▄▄██',
-          '▀▀▀▀▀▀ ',
+          '  ##### ',
+          ' ##     ',
+          '  ####  ',
+          '    ##  ',
+          '     ## ',
+          ' #####  ',
+          '  ####  ',
         ],
       };
 
       const LOGO_ROWS = [
-        ' ▄▄▄▄▄▄▄▄ ',
-        '██      ██',
-        '██ ▄▄▄▄ ██',
-        '██ ████ ██',
-        '██ ▀▀▀▀ ██',
-        '██      ██',
-        ' ▀▀▀▀▀▀▀▀ ',
+        ' ######## ',
+        '##      ##',
+        '## #### ##',
+        '## #### ##',
+        '## #### ##',
+        '##      ##',
+        ' ######## ',
       ];
 
       const letters = ['A', 'I', 'O', 'S'];
@@ -845,14 +971,14 @@
       for (let r = 0; r < 7; r++) {
         const logoCol = LOGO_ROWS[r];
         const titleCol = letters.map(l => BLOCK[l][r]).join('  ');
-        const coloredLogo = logoCol.replace(/[▄▀█]/g, m => `<span style="color: var(--accent-primary);">${m}</span>`);
-        const coloredTitle = titleCol.replace(/[▄▀█]/g, m => `<span style="color: var(--text-primary); font-weight: bold;">${m}</span>`);
+        const coloredLogo = logoCol.replace(/#/g, () => `<span style="color: var(--accent-primary); font-weight: bold;">█</span>`);
+        const coloredTitle = titleCol.replace(/#/g, () => `<span style="color: var(--text-primary); font-weight: bold;">█</span>`);
         bannerLines.push(`  ${coloredLogo}    ${coloredTitle}`);
       }
       
       const lines = [
         { html: '<span style="color: var(--accent-primary);">$</span> ', text: 'npm install -g aios', delay: 800, type: 'typing' },
-        { html: '<span style="color: var(--text-muted);">+ aios@1.3.3 added 12 packages in 1.4s</span>', delay: 1000, type: 'html' },
+        { html: '<span style="color: var(--text-muted);">+ aios@1.3.4 added 12 packages in 1.4s</span>', delay: 1000, type: 'html' },
         { html: '', delay: 500, type: 'html' },
         { html: '<span style="color: var(--accent-primary);">$</span> ', text: 'aios', delay: 1000, type: 'typing' },
         { html: '', delay: 500, type: 'html' },
@@ -864,7 +990,7 @@
         { html: bannerLines[5], delay: 50, type: 'html' },
         { html: bannerLines[6], delay: 50, type: 'html' },
         { html: '', delay: 150, type: 'html' },
-        { html: '<span style="color: var(--text-secondary);">  agentic command line  v1.3.3</span>', delay: 100, type: 'html' },
+        { html: '<span style="color: var(--text-secondary);">  agentic command line  v1.3.4</span>', delay: 100, type: 'html' },
         { html: '<span style="color: var(--text-muted);">  ──────────────────────────────────────────────────────</span>', delay: 100, type: 'html' },
         { html: '', delay: 400, type: 'html' },
         { html: '<span style="color: var(--status-success);">✓</span> <span style="color: var(--text-secondary);">Core services initialized.</span>', delay: 300, type: 'html' },
@@ -923,6 +1049,310 @@
         });
       }, { threshold: 0.25 });
       
+      // ============================================
+      // Custom Scrollbar Waveform & Tip Card Engine
+      // ============================================
+      const scrollbarRoot = document.getElementById('custom-scrollbar-root');
+      const waveformSvg = document.getElementById('scrollbar-waveform');
+      const scrollbarThumb = document.getElementById('scrollbar-thumb');
+      const tipCard = document.getElementById('tip-card');
+      const tipTag = document.getElementById('tip-tag');
+      const tipTitle = document.getElementById('tip-title');
+      const tipBody = document.getElementById('tip-body');
+      const tipProgress = document.getElementById('tip-progress');
+      const tipBtnClose = document.getElementById('tip-btn-close');
+
+      const AIOS_TIPS = [
+        {
+          title: "Surgical File Patches",
+          body: "AIOS features a custom `patch_file` tool that replaces exact code segments instead of rewriting entire files. Use it to avoid context limits and save tokens.",
+          tag: "AIOS Tip // 01"
+        },
+        {
+          title: "Local Configurations",
+          body: "Your BYOK credentials, theme presets, and provider configs are saved securely in `~/.aios/config.json`. The CLI reads these settings automatically on startup.",
+          tag: "AIOS Tip // 02"
+        },
+        {
+          title: "Track Session History",
+          body: "Session histories are cached locally in `~/.aios/sessions/<hash>.json` using a SHA-256 hash of your project root. Re-run anywhere to resume conversation.",
+          tag: "AIOS Tip // 03"
+        },
+        {
+          title: "Fast File Reading",
+          body: "The `read_file` tool accepts `offset` and `limit` options, enabling agents to scan specific sections of files (up to 2000 lines) without reading the full body.",
+          tag: "AIOS Tip // 04"
+        },
+        {
+          title: "Model Picker",
+          body: "Switch models instantly in REPL using the `/model` or `/model <model_id>` slash command, or manage your endpoints using `/provider`.",
+          tag: "AIOS Tip // 05"
+        },
+        {
+          title: "Auto-Access Mode",
+          body: "Skip manual execution approvals by launching with `aios -y` or `aios --yes` to grant auto-consent for tool writes, file patches, and terminal commands.",
+          tag: "AIOS Tip // 06"
+        },
+        {
+          title: "Canvas & Artifacts",
+          body: "Agents use `update_plan` and `create_artifact` to render real-time checklists and markdown outputs in the desktop application's side Canvas panel.",
+          tag: "AIOS Tip // 07"
+        },
+        {
+          title: "Incremental Output Builds",
+          body: "The desktop agent leverages `append_file` to write large codebase segments step-by-step, eliminating output cutoff and mid-turn truncation issues.",
+          tag: "AIOS Tip // 08"
+        }
+      ];
+
+      // Tip Engine variables and functions declared early to avoid Temporal Dead Zone (TDZ)
+      let currentTipIndex = 0;
+      let tipTimer = null;
+      let progressInterval = null;
+      let tipDismissed = false;
+      const ROTATION_TIME = 9000; // 9 seconds
+
+      function showTip(idx) {
+        if (tipDismissed) return;
+        
+        // Anim out
+        tipCard.style.opacity = '0';
+        tipCard.style.transform = 'rotateX(15deg) translateY(30px) scale(0.95)';
+        tipCard.style.pointerEvents = 'none';
+        
+        setTimeout(() => {
+          if (tipDismissed) return;
+          const tip = AIOS_TIPS[idx];
+          tipTag.textContent = tip.tag;
+          tipTitle.textContent = tip.title;
+          tipBody.innerHTML = tip.body.replace(/`([^`]+)`/g, '<code style="background: var(--bg-secondary); color: var(--accent-primary); padding: 1px 4px; border-radius: 3px; font-family: var(--font-mono); font-size: 10px;">$1</code>');
+          
+          // Anim in
+          tipCard.style.opacity = '1';
+          tipCard.style.transform = 'rotateX(0deg) translateY(0px) scale(1)';
+          tipCard.style.pointerEvents = 'auto';
+          
+          // Reset progress bar animation
+          clearInterval(progressInterval);
+          const start = Date.now();
+          tipProgress.style.width = '0%';
+          
+          progressInterval = setInterval(() => {
+            const elapsed = Date.now() - start;
+            const pct = Math.min(100, (elapsed / ROTATION_TIME) * 100);
+            tipProgress.style.width = `${pct}%`;
+            if (pct >= 100) clearInterval(progressInterval);
+          }, 50);
+          
+        }, 400);
+      }
+
+      function startTipRotation() {
+        if (tipDismissed) return;
+        clearInterval(tipTimer);
+        showTip(currentTipIndex);
+        
+        tipTimer = setInterval(() => {
+          currentTipIndex = (currentTipIndex + 1) % AIOS_TIPS.length;
+          showTip(currentTipIndex);
+        }, ROTATION_TIME + 400);
+      }
+
+      // 1. Generate Waveform SVG Bars Dynamically (Wider) + animate
+      const barCount = 70;
+      const bars = [];
+      const TRACK_W = 64;
+      for (let i = 0; i < barCount; i++) {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('height', '3');
+        rect.setAttribute('rx', '1.5');
+        rect.setAttribute('fill', 'var(--text-muted)');
+        rect.setAttribute('opacity', '0.4');
+
+        const y = (i * 8) + 20;
+        rect.setAttribute('y', y.toString());
+        waveformSvg.appendChild(rect);
+
+        // base amplitude from a smooth envelope + per-bar phase for the animation
+        const envelope = Math.sin((i / barCount) * Math.PI); // 0..1..0 down the track
+        bars.push({
+          rect,
+          y,
+          base: 6 + envelope * 24,
+          phase: i * 0.7,
+          speed: 1.6 + (i % 5) * 0.25,
+        });
+      }
+
+      function layoutBar(b, w) {
+        const width = Math.max(3, w);
+        const x = (TRACK_W - width) / 2;
+        b.rect.setAttribute('x', x.toFixed(1));
+        b.rect.setAttribute('width', width.toFixed(1));
+      }
+      // initial paint
+      bars.forEach(b => layoutBar(b, b.base));
+
+      let waveRAF = null;
+      function animateWaveform(t) {
+        const time = t / 1000;
+        for (const b of bars) {
+          const wob = Math.sin(time * b.speed + b.phase);
+          const w = b.base * (0.55 + 0.45 * Math.abs(wob)); // breathes between ~55% and 100%
+          layoutBar(b, w);
+        }
+        waveRAF = requestAnimationFrame(animateWaveform);
+      }
+      waveRAF = requestAnimationFrame(animateWaveform);
+
+      // 2. Generate Milestone Points on the Track
+      const padding = 30; // margins
+      const points = [];
+      
+      function createMilestones() {
+        const trackHeight = scrollbarRoot.clientHeight;
+        scrollbarRoot.querySelectorAll('.scrollbar-point').forEach(el => el.remove());
+        
+        AIOS_TIPS.forEach((tip, idx) => {
+          const dot = document.createElement('div');
+          dot.className = 'scrollbar-point';
+          
+          const pct = idx / (AIOS_TIPS.length - 1);
+          const topVal = padding + pct * (trackHeight - 2 * padding);
+          
+           dot.setAttribute('style', `position: absolute; right: 50%; top: ${topVal}px; width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); border: 2px solid var(--bg-primary); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translate(50%, -50%); cursor: pointer; z-index: 5;`);
+          dot.setAttribute('title', `Tip ${idx+1}: ${tip.title}`);
+          
+          dot.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const targetPct = idx / (AIOS_TIPS.length - 1);
+            const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+            window.scrollTo({
+              top: targetPct * totalHeight,
+              behavior: 'smooth'
+            });
+            currentTipIndex = idx;
+            showTip(currentTipIndex);
+          });
+          
+          scrollbarRoot.appendChild(dot);
+          points.push(dot);
+        });
+      }
+
+      // Initialize milestone points
+      createMilestones();
+      window.addEventListener('resize', createMilestones, { passive: true });
+
+      // 3. Window Scroll Listener to Track Position & Auto-activate Tips
+      function updateScrollIndicator() {
+        const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const pct = totalHeight > 0 ? window.scrollY / totalHeight : 0;
+        
+        const trackHeight = scrollbarRoot.clientHeight;
+        const thumbY = padding + pct * (trackHeight - 2 * padding);
+        scrollbarThumb.style.top = `${thumbY}px`;
+        
+        // Light up waveform bars above current position
+        const rects = waveformSvg.querySelectorAll('rect');
+        const activeIndex = Math.min(rects.length - 1, Math.floor(pct * rects.length));
+        rects.forEach((r, idx) => {
+          if (idx <= activeIndex) {
+            r.setAttribute('fill', 'var(--accent-primary)');
+            r.setAttribute('opacity', '1');
+          } else {
+            r.setAttribute('fill', 'var(--text-muted)');
+            r.setAttribute('opacity', '0.4');
+          }
+        });
+
+        // Trigger corresponding Tip Card automatically as the thumb passes coordinates
+        const tipSegment = Math.min(AIOS_TIPS.length - 1, Math.floor(pct * AIOS_TIPS.length));
+        if (tipSegment !== currentTipIndex) {
+          currentTipIndex = tipSegment;
+          if (!tipDismissed) {
+            startTipRotation();
+          }
+        }
+
+        // Highlight milestone points
+        const dots = scrollbarRoot.querySelectorAll('.scrollbar-point');
+        dots.forEach((dot, idx) => {
+          if (idx <= tipSegment) {
+            dot.style.background = 'var(--accent-primary)';
+            dot.style.boxShadow = '0 0 6px var(--accent-primary)';
+            dot.style.transform = 'translate(50%, -50%) scale(1.3)';
+          } else {
+            dot.style.background = 'var(--text-muted)';
+            dot.style.boxShadow = 'none';
+            dot.style.transform = 'translate(50%, -50%) scale(1)';
+          }
+        });
+      }
+
+      window.addEventListener('scroll', updateScrollIndicator, { passive: true });
+      updateScrollIndicator();
+
+      // 4. Thumb Dragging Support
+      let isDraggingScrollbar = false;
+      scrollbarThumb.addEventListener('mousedown', (e) => {
+        isDraggingScrollbar = true;
+        document.body.style.userSelect = 'none';
+        scrollbarRoot.style.backgroundColor = 'rgba(15, 23, 42, 0.08)';
+        e.stopPropagation();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDraggingScrollbar) return;
+        const rect = scrollbarRoot.getBoundingClientRect();
+        const relativeY = e.clientY - rect.top;
+        const trackHeight = rect.height;
+        
+        const pct = Math.max(0, Math.min(1, (relativeY - padding) / (trackHeight - 2 * padding)));
+        const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+        window.scrollTo(0, pct * totalHeight);
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isDraggingScrollbar) {
+          isDraggingScrollbar = false;
+          document.body.style.userSelect = '';
+          scrollbarRoot.style.backgroundColor = '';
+        }
+      });
+
+
+
+      // Close / Dismiss handler
+      tipBtnClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        tipDismissed = true;
+        clearInterval(tipTimer);
+        clearInterval(progressInterval);
+        tipCard.style.opacity = '0';
+        tipCard.style.transform = 'rotateX(15deg) translateY(30px) scale(0.95)';
+        tipCard.style.pointerEvents = 'none';
+      });
+
+      // Show card and reset rotation if user scrolls or hovers scrollbar
+      let scrollWakeTimeout = null;
+      function wakeTipCard() {
+        if (tipDismissed) {
+          tipDismissed = false;
+          startTipRotation();
+        }
+      }
+
+      window.addEventListener('scroll', () => {
+        clearTimeout(scrollWakeTimeout);
+        scrollWakeTimeout = setTimeout(wakeTipCard, 100);
+      }, { passive: true });
+
+      scrollbarRoot.addEventListener('mouseenter', wakeTipCard);
+
+      // Start tip cards immediately
+      startTipRotation();
+
       observer.observe(cliContainer);
     });
   </script>

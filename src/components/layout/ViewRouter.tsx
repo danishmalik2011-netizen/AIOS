@@ -18,6 +18,7 @@ const SettingsView = lazy(() => import('@/components/views/SettingsView').then((
 const NotificationsView = lazy(() => import('@/components/views/NotificationsView').then((m) => ({ default: m.NotificationsView })));
 const AccountView = lazy(() => import('@/components/views/AccountView').then((m) => ({ default: m.AccountView })));
 const WorkspacesView = lazy(() => import('@/components/views/WorkspacesView').then((m) => ({ default: m.WorkspacesView })));
+const WebView = lazy(() => import('@/components/views/WebView').then((m) => ({ default: m.WebView })));
 
 const views: Record<SidebarView, React.ComponentType> = {
   dashboard: Dashboard,
@@ -33,6 +34,7 @@ const views: Record<SidebarView, React.ComponentType> = {
   settings: SettingsView,
   notifications: NotificationsView,
   account: AccountView,
+  web: WebView,
 };
 
 function ViewFallback() {

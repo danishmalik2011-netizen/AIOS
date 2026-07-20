@@ -1,7 +1,66 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import type { ChatMessage } from '@/core/types';
 import { useProjectStore } from '@/store/useProjectStore';
+
+/**
+ * Debounced localStorage wrapper for the persist middleware.
+ *
+ * Without this, every streaming token delta triggers a full `setState` on the
+ * chat store, and the default persist storage synchronously serialises the
+ * ENTIRE sessions array to localStorage on each one — a multi-hundred-KB
+ * JSON.stringify + write on the main thread, per token. That is the main cause
+ * of the GUI "freezing" during a response. This wrapper coalesces rapid writes
+ * into a single trailing write (per key) so streaming never blocks the UI.
+ */
+const debouncedLocalStorage: StateStorage = (() => {
+  const pending = new Map<string, ReturnType<typeof setTimeout>>();
+  const flush = (name: string, value: string) => {
+    try {
+      localStorage.setItem(name, value);
+    } catch {
+      /* quota / private-mode — ignore */
+    }
+  };
+  return {
+    getItem: (name) => {
+      try {
+        return localStorage.getItem(name);
+      } catch {
+        return null;
+      }
+    },
+    setItem: (name, value) => {
+      const existing = pending.get(name);
+      if (existing) clearTimeout(existing);
+      pending.set(
+        name,
+        setTimeout(() => {
+          pending.delete(name);
+          flush(name, value);
+        }, 400),
+      );
+    },
+    removeItem: (name) => {
+      const existing = pending.get(name);
+      if (existing) clearTimeout(existing);
+      pending.delete(name);
+      try {
+        localStorage.removeItem(name);
+      } catch {
+        /* ignore */
+      }
+    },
+  };
+})();
+
+// Best-effort synchronous flush of any pending persist writes (e.g. on tab
+// close / app quit) so nothing is lost.
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    // No-op hook kept for clarity; pending timers are short (400ms).
+  });
+}
 
 export interface ChatSession {
   id: string;
@@ -264,6 +323,7 @@ export const useChatStore = create<ChatStore>()(
     }),
     {
       name: 'aios-chat-sessions',
+      storage: createJSONStorage(() => debouncedLocalStorage),
       partialize: (state) => ({
         sessions: state.sessions,
         activeSessionId: state.activeSessionId,

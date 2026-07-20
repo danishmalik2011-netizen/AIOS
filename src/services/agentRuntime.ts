@@ -71,6 +71,10 @@ export interface AgentTurnResult {
   tokens: number;
   /** Whether the turn ended after executing tool calls. */
   toolCallsExecuted: number;
+  /** Provider stop reason. 'length' means the response was truncated by the
+   *  max-token cap (incomplete); 'stop' (or undefined) means it finished
+   *  naturally. Used to decide whether auto-continue should kick in. */
+  finishReason?: string;
 }
 
 export async function runAgentTurn(
@@ -99,7 +103,7 @@ export async function runAgentTurn(
         system: agent.systemPrompt,
         messages,
         temperature: agent.temperature,
-        maxTokens: agent.maxTokens || 4096,
+        maxTokens: agent.maxTokens || 8192,
         ...(tools && tools.length > 0 && executeTool ? { tools } : {}),
       },
       {
@@ -122,11 +126,14 @@ export async function runAgentTurn(
         simulated: result.simulated,
         tokens: result.usage?.outputTokens ?? Math.round(result.content.length / 4),
         toolCallsExecuted,
+        finishReason: result.finishReason,
       };
     }
 
-    // Guard against runaway tool loops (raised from 8 → 25 for large tasks).
-    if (toolRounds >= 25) {
+    // Guard against runaway tool loops. Raised from 8 → 25 → 40 for large
+    // multi-step tasks. Auto-continue (CLI) can drive many turns, but this
+    // hard cap still protects against a genuinely stuck loop.
+    if (toolRounds >= 40) {
       return {
         content:
           acc ||
@@ -136,6 +143,7 @@ export async function runAgentTurn(
         simulated: result.simulated,
         tokens: result.usage?.outputTokens ?? Math.round(acc.length / 4),
         toolCallsExecuted,
+        finishReason: result.finishReason,
       };
     }
 

@@ -156,7 +156,8 @@ export type SidebarView =
   | 'workspaces'
   | 'settings'
   | 'notifications'
-  | 'account';
+  | 'account'
+  | 'web';
 
 export interface Command {
   id: string;

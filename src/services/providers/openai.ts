@@ -94,7 +94,7 @@ export const openaiDriver: ProviderDriver = {
           model: req.model,
           messages,
           temperature: req.temperature ?? 0.7,
-          max_tokens: req.maxTokens ?? 1024,
+          max_tokens: req.maxTokens ?? 8192,
           ...(tools && tools.length > 0 ? { tools, tool_choice: mode } : {}),
           stream: true,
         }),

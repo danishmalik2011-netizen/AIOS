@@ -1,11 +1,18 @@
 {
-  "name": "aios",
-  "private": true,
-  "version": "1.3.3",
-  "description": "AI Agent Operating System — The single command center for AI-assisted software creation",
+  "name": "aios-cli",
+  "version": "1.3.6",
+  "description": "AI Agent Operating System — The single command center for AI-assisted software creation. Cross-platform agentic CLI: aios [prompt].",
   "main": "dist-electron/main.cjs",
   "bin": {
     "aios": "dist-cli/aios.cjs"
+  },
+  "files": [
+    "dist-cli/aios.cjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
   },
   "scripts": {
     "dev": "vite",

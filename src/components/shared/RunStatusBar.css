@@ -1,0 +1,106 @@
+/* ================================================
+   RunStatusBar — live Fleet Director run status
+   strip with progress + pause/resume/stop.
+   ================================================ */
+
+.run-status-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  width: 100%;
+}
+
+.run-status-bar__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  flex: 1;
+}
+
+.run-status-bar__glyph {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.run-status-bar__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.run-status-bar__goal {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.run-status-bar__counts {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.run-status-bar__counts svg {
+  vertical-align: -2px;
+  margin-right: 2px;
+}
+
+.run-status-bar__err {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--status-error);
+}
+
+.run-status-bar__llm {
+  margin-left: var(--space-1);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: rgba(124, 92, 255, 0.15);
+  border: 1px solid rgba(124, 92, 255, 0.3);
+  color: var(--accent-primary);
+  font-size: 10px;
+  font-weight: var(--font-semibold);
+}
+
+.run-status-bar__track {
+  flex: 1.4;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  min-width: 80px;
+}
+
+.run-status-bar__fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  transition: width var(--duration-slow) var(--ease-default);
+}
+
+.run-status-bar__fill[data-state='paused'] {
+  background: linear-gradient(90deg, var(--status-warning), #ffd27a);
+}
+
+.run-status-bar__fill[data-state='idle'] {
+  background: var(--border-strong);
+}
+
+.run-status-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}

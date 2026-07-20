@@ -273,6 +273,17 @@ function TerminalPane({
     term.open(container);
     fit.fit();
 
+    // ---- Mouse handling -------------------------------------------------
+    // xterm.js handles mouse clicks and wheel scrolling natively: it scrolls
+    // the scrollback buffer on wheel, and (when a program inside the PTY
+    // enables mouse tracking, e.g. `ESC[?1006h`) it sends SGR mouse reports
+    // to that program. The previous CSS forced `overflow-y: scroll` +
+    // `pointer-events: auto` on `.xterm-viewport`, which made the browser's
+    // native scrollbar fight xterm's own wheel/scroll handling — that is what
+    // produced the repeated `6` garbage and broke clicks/scroll. With that CSS
+    // removed, xterm now owns the viewport and mouse works correctly, so no
+    // custom wheel handler is needed here.
+
     // Selection cut on Backspace
     term.attachCustomKeyEventHandler((e: KeyboardEvent) => {
       if (e.type === 'keydown') {
@@ -517,13 +528,14 @@ function TerminalPane({
     };
     container.addEventListener('paste', handlePaste, true);
 
-    const handleWheel = (e: WheelEvent) => {
-      const lines = Math.round(e.deltaY / 30) || (e.deltaY > 0 ? 1 : -1);
-      term.scrollLines(lines);
-      e.preventDefault();
-      e.stopPropagation();
-    };
-    container.addEventListener('wheel', handleWheel, { passive: false });
+    // NOTE: Do NOT attach a custom `wheel` handler here. xterm.js already
+    // handles wheel scrolling natively (it scrolls the scrollback buffer, and
+    // forwards SGR mouse reports to any program that enabled mouse tracking).
+    // A competing container-level `wheel` listener that also calls
+    // `term.scrollLines()` + `preventDefault()` double-processes the event and
+    // interferes with xterm's mouse-report parsing — which is what produced the
+    // literal `5#5` (and previously `6`) garbage echoed into the terminal.
+    // Let xterm own the wheel event.
 
     const handleClear = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -532,7 +544,6 @@ function TerminalPane({
     window.addEventListener('clear-terminal', handleClear);
 
     return () => {
-      container.removeEventListener('wheel', handleWheel);
       window.removeEventListener('clear-terminal', handleClear);
       container.removeEventListener('paste', handlePaste, true);
       resizeObserver.disconnect();

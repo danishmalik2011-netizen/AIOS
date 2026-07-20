@@ -1,4 +1,4 @@
-/* ================================================
+﻿/* ================================================
    AIOS CLI — presentation layer
    A tiny zero-dependency ANSI helper, a terminal markdown
    renderer (mirrors the app's custom chat renderer), the
@@ -272,6 +272,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { name: '/fix',      description: 'Prefix — find and fix errors' },
   { name: '/test',     description: 'Prefix — generate tests' },
   { name: '/plan',     description: 'Draft a plan before acting' },
+  { name: '/run',      description: 'Execute the last /plan as a task graph (DAG)  (--dry to preview)' },
   { name: '/theme',    description: 'Customize message bubble colors' },
   { name: '/composer', description: 'Adjust temperature, max tokens, and reasoning toggles' },
   { name: '/exit',     description: 'Quit the CLI' },

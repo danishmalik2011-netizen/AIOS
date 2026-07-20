@@ -257,20 +257,25 @@ button, input { font: inherit; outline: none; }
    Navigation
    ================================================ */
 .nav {
-  position: sticky; top: 0; z-index: 100;
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-subtle);
-  transition: background var(--duration-normal), border-color var(--duration-normal);
+  position: fixed; top: 1.25rem; left: 50%; transform: translateX(-50%);
+  width: calc(100% - 2.5rem); max-width: 960px; z-index: 100;
+  background: rgba(13, 16, 24, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
+  border-radius: 9999px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  transition: all var(--duration-normal) ease;
 }
 [data-theme="light"] .nav {
-  background: var(--bg-primary);
+  background: rgba(248, 250, 252, 0.8);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
 }
 
 .nav__inner {
   display: flex; align-items: center; justify-content: space-between;
   gap: var(--space-4);
-  max-width: 1280px; margin: 0 auto;
-  padding: var(--space-3) var(--space-6);
+  padding: 0.6rem 1.5rem;
 }
 
 .brand { display: flex; align-items: center; gap: var(--space-2); text-decoration: none; }
@@ -374,7 +379,7 @@ button, input { font: inherit; outline: none; }
   gap: var(--space-12);
   align-items: center;
   max-width: 1280px; margin: 0 auto;
-  padding: var(--space-16) var(--space-6) var(--space-12);
+  padding: calc(var(--space-16) + 4.5rem) var(--space-6) var(--space-12);
 }
 .hero__glow { display: none; }
 .hero__content { position: relative; z-index: 1; }
@@ -1056,7 +1061,7 @@ button, input { font: inherit; outline: none; }
    Responsive
    ================================================ */
 @media (max-width: 1024px) {
-  .hero { grid-template-columns: 1fr; gap: var(--space-10); padding-top: var(--space-12); }
+  .hero { grid-template-columns: 1fr; gap: var(--space-10); padding-top: calc(var(--space-12) + 5.5rem); }
   .mockup { max-width: 600px; margin: 0 auto; }
   .features { grid-template-columns: repeat(2, 1fr); }
   .steps { grid-template-columns: repeat(2, 1fr); }

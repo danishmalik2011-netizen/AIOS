@@ -1,4 +1,4 @@
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useProjectStore } from '@/store/useProjectStore';
 import { useTerminalStore } from '@/store/useTerminalStore';
@@ -50,14 +50,19 @@ export function AppShell() {
   // conversations swaps the workspace to that chat's project instead of
   // every chat sharing one global root.
   const activeSessionId = useChatStore((s) => s.activeSessionId);
-  const chatSessions = useChatStore((s) => s.sessions);
+  // Subscribe ONLY to the active session's projectId, not the whole
+  // sessions array. Streaming token deltas mutate session messages, so a
+  // broad `s.sessions` subscription would re-render the entire app shell
+  // on every token. Narrowing here keeps message updates from touching
+  // the shell layout at all.
+  const activeSessionProjectId = useChatStore(
+    (s) => s.sessions.find((x) => x.id === s.activeSessionId)?.projectId ?? null,
+  );
   const chatProjects = useChatStore((s) => s.projects);
   const activeProjectRoot = useMemo(() => {
-    if (!activeSessionId) return null;
-    const sess = chatSessions.find((s) => s.id === activeSessionId);
-    if (!sess?.projectId) return null;
-    return chatProjects.find((p) => p.id === sess.projectId)?.rootPath ?? null;
-  }, [activeSessionId, chatSessions, chatProjects]);
+    if (!activeSessionProjectId) return null;
+    return chatProjects.find((p) => p.id === activeSessionProjectId)?.rootPath ?? null;
+  }, [activeSessionProjectId, chatProjects]);
 
   // The workspace (Files / Terminal / Git / agent context) follows the
   // ACTIVE chat. Each project stores its own folder path, so switching

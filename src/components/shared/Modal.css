@@ -57,3 +57,102 @@
   padding: var(--space-5);
   overflow-y: auto;
 }
+
+/* ---- Plan approval (Fleet Director propose→approve gate) ---- */
+.plan-approval {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.plan-approval__goal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2, rgba(124, 92, 255, 0.08));
+  border: 1px solid var(--border-subtle);
+}
+
+.plan-approval__goal-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.plan-approval__goal-text {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.plan-approval__hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.plan-approval__tree {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.plan-approval__node {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: var(--surface-1, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle);
+}
+
+.plan-approval__role {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.plan-approval__role--planner { background: #7c5cff; }
+.plan-approval__role--builder { background: #ffb347; }
+.plan-approval__role--reviewer { background: #00d4aa; }
+.plan-approval__role--tester { background: #4aa3ff; }
+.plan-approval__role--deployer { background: #ff6b6b; }
+.plan-approval__role--custom { background: #5b6472; }
+
+.plan-approval__node-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plan-approval__node-label {
+  font-size: 13px;
+  color: var(--text-strong);
+}
+
+.plan-approval__node-deps {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.plan-approval__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}

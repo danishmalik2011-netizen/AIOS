@@ -32,4 +32,12 @@ export const CHANNELS = {
   secretsSet: 'secrets:set',
   secretsClear: 'secrets:clear',
   secretsHas: 'secrets:has',
+
+  webSearch: 'web:search',
+
+  ttsSpeak: 'tts:speak',
+  ttsCancel: 'tts:cancel',
+  ttsEnd: 'tts:end',
+
+  sttTranscribe: 'stt:transcribe',
 } as const;

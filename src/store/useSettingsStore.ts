@@ -59,6 +59,7 @@ interface SettingsStore {
   addProvider: (provider: AIProvider) => void;
   removeProvider: (id: string) => void;
   updateProviderApiKey: (id: string, hasKey: boolean) => void;
+  setProviderModels: (id: string, models: string[]) => void;
   toggleProviderConnected: (id: string) => void;
   addSecret: (secret: SecretEntry) => void;
   removeSecret: (id: string) => void;
@@ -140,6 +141,18 @@ export const useSettingsStore = create<SettingsStore>()(
         set((state) => ({
           providers: state.providers.map((p) =>
             p.id === id ? { ...p, apiKeySet: hasKey, isConfigured: hasKey } : p,
+          ),
+        })),
+
+      // Persist the live model list fetched from a provider into the system so
+      // the chat composer and other surfaces can offer the complete set. Called
+      // whenever a key is accepted/verified so models are auto-added.
+      setProviderModels: (id, models) =>
+        set((state) => ({
+          providers: state.providers.map((p) =>
+            p.id === id
+              ? { ...p, models: Array.from(new Set((models ?? []).filter(Boolean))).sort() }
+              : p,
           ),
         })),
 

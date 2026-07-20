@@ -1,4 +1,4 @@
-/* ================================================
+﻿/* ================================================
    AIOS CLI — entry point
    `aios "<prompt>"` runs one task; `aios` with no prompt
    drops into an interactive REPL (composer-style hotkeys,
@@ -36,8 +36,21 @@ import {
 } from './ui';
 import type { ModalPage, ModalController, ModalItem, TurnSink } from './ui';
 import { PROVIDER_CATALOG, catalogById } from './providerCatalog';
+import {
+  planTask,
+  renderPlanTree,
+  runPlan,
+  type PlanRunHandlers,
+} from './planner';
+import type { OrchestrationPlan } from '@/core/types';
 
-const VERSION = '1.3.3';
+const VERSION = '1.3.5';
+
+/** Last plan produced by /plan — reused by /run. Module-scoped so the slash
+ *  router and the run handler share it across REPL turns. */
+let lastPlan: OrchestrationPlan | null = null;
+/** Abort controller for an in-flight /run DAG execution. */
+let planRunAbort: AbortController | null = null;
 
 interface ParsedArgs {
   prompt: string;
@@ -536,6 +549,7 @@ async function main(): Promise<void> {
   let replOnLineHook: ((line: string) => Promise<boolean>) | null = null;
 
   let activeAbortController: AbortController | null = null;
+  let lastAssistantText = '';
 
   const repl = startRepl({
     status: statusOf(activeProvider, activeModel),
@@ -546,6 +560,7 @@ async function main(): Promise<void> {
         activeAbortController = null;
       }
     },
+    getLastAssistantText: () => lastAssistantText,
     onLine: async (rawLine: string, ctx) => {
       liveSink = ctx.sink; // stream tool activity into the scrollback
       if (replOnLineHook && (await replOnLineHook(rawLine))) return;
@@ -572,6 +587,8 @@ async function main(): Promise<void> {
       activeAbortController = new AbortController();
       try {
         await runTurn(activeAgent, activeProvider, activeModel, tools, executor, history, args.root, ctx.sink, activeAbortController.signal);
+        const last = [...history].reverse().find((m) => m.role === 'assistant');
+        lastAssistantText = last ? last.content : '';
       } finally {
         activeAbortController = null;
         saveHistory(args.root, history);
@@ -1254,13 +1271,15 @@ async function main(): Promise<void> {
           persistSelection();
         },
         clear: () => { history.length = 0; },
+        copyResponse: () => repl.copyLastResponse(),
         exit: () => repl.close(),
         yes: args.yes,
         interactive: args.interactive,
         root: args.root,
+        history,
       });
       if (stop) return true;
-      if (line === '/plan' || line.startsWith('/explain') || line.startsWith('/refactor') ||
+      if (line.startsWith('/explain') || line.startsWith('/refactor') ||
           line.startsWith('/fix') || line.startsWith('/test')) {
         return false; // treat as a normal prompt
       }
@@ -1280,9 +1299,11 @@ interface SlashCtx {
   setModel: (m: string) => void;
   clear: () => void;
   exit: () => void;
+  copyResponse: () => boolean;
   yes: boolean;
   interactive: boolean;
   root: string;
+  history: ChatMessage[];
 }
 
 /** Returns true if the REPL should stop processing the line as a message. */
@@ -1302,6 +1323,11 @@ async function handleSlash(line: string, ctx: SlashCtx): Promise<boolean> {
       ctx.clear();
       process.stdout.write(ansi.gray('  conversation cleared\n'));
       return true;
+    case '/copy': {
+      const ok = ctx.copyResponse();
+      process.stdout.write(ok ? ansi.green('  ✓ last response copied to clipboard\n') : ansi.red('  no response to copy yet\n'));
+      return true;
+    }
     case '/model': {
       if (!arg) {
         process.stdout.write(`  ${ansi.cyan('model')}: ${ansi.bold(ctx.getModel())}\n`);
@@ -1389,8 +1415,88 @@ async function handleSlash(line: string, ctx: SlashCtx): Promise<boolean> {
       process.stdout.write(ansi.red(`  unknown /provider subcommand "${sub}"\n`));
       return true;
     }
+    case '/plan': {
+      const goal = arg || lastUserMessage(ctx.history);
+      if (!goal) {
+        process.stdout.write(ansi.red('  usage: /plan <goal>  (or chat first, then /plan)\n'));
+        return true;
+      }
+      process.stdout.write(ansi.gray('  decomposing goal into a task graph...\n'));
+      try {
+        const plan = await planTask(goal, planRunAbort?.signal);
+        lastPlan = plan;
+        process.stdout.write(renderPlanTree(plan) + '\n');
+        process.stdout.write(ansi.dim('  run it with /run  (or /run --dry to just show)\n'));
+      } catch (e) {
+        process.stdout.write(ansi.red('  plan failed: ' + (e as Error).message + '\n'));
+      }
+      return true;
+    }
+    case '/run': {
+      const goal = arg && !arg.startsWith('--') ? arg : null;
+      const dry = arg.includes('--dry');
+      if (goal) {
+        process.stdout.write(ansi.gray('  decomposing + running...\n'));
+        lastPlan = await planTask(goal, planRunAbort?.signal);
+      }
+      if (!lastPlan) {
+        process.stdout.write(ansi.red('  no plan yet -- use /plan <goal> first\n'));
+        return true;
+      }
+      if (dry) {
+        process.stdout.write(renderPlanTree(lastPlan) + '\n');
+        return true;
+      }
+      await executePlan(lastPlan);
+      return true;
+    }
     default:
       return false; // not a control command → send as message
+  }
+}
+
+/** Pull the most recent user message from history (for bare /plan). */
+function lastUserMessage(history: ChatMessage[]): string | null {
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].role === 'user') return history[i].content;
+  }
+  return null;
+}
+
+/** Execute a plan as a DAG, streaming progress to the TTY. */
+async function executePlan(plan: OrchestrationPlan): Promise<void> {
+  planRunAbort = new AbortController();
+  const signal = planRunAbort.signal;
+
+  const handlers: PlanRunHandlers = {
+    onNodeStart: (t) =>
+      process.stdout.write('  ' + ansi.cyan('>') + ' ' + t.role + ': ' + ansi.gray(t.label) + '\n'),
+    onNodeProgress: () => {},
+    onNodeComplete: (t, out) => {
+      const preview = out.replace(/<\/?think>/gi, '').trim().split('\n')[0]?.slice(0, 80) ?? '';
+      process.stdout.write('  ' + ansi.green('OK') + ' ' + t.role + ' done -- ' + ansi.dim(preview) + '\n');
+    },
+    onNodeError: (t, msg) =>
+      process.stdout.write('  ' + ansi.red('XX') + ' ' + t.role + ' failed: ' + msg + '\n'),
+    onWave: (ids, i) =>
+      process.stdout.write(ansi.dim('  -- wave #' + (i + 1) + ': ' + ids.length + ' node(s) in parallel --\n')),
+  };
+
+  try {
+    const res = await runPlan(plan, handlers, signal);
+    if (res.cancelled) {
+      process.stdout.write(ansi.yellow('\n  plan run cancelled\n'));
+    } else if (Object.keys(res.errors).length || res.skipped.length) {
+      process.stdout.write(
+        ansi.yellow('\n  plan finished with ' + Object.keys(res.errors).length + ' error(s), ' + res.skipped.length + ' skipped\n'),
+      );
+    } else {
+      process.stdout.write(ansi.green('\n  OK plan complete -- all subtasks done\n'));
+    }
+  } catch (e) {
+    process.stdout.write(ansi.red('\n  plan run crashed: ' + (e as Error).message + '\n'));
+  } finally {
+    planRunAbort = null;
   }
 }
 

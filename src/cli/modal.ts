@@ -61,6 +61,9 @@ export class Modal {
   private prevRows = 0;
   private resolveFn: ((o: ModalOutcome) => void) | null = null;
   private busy = false;
+  private stdin: NodeJS.ReadStream = process.stdin;
+  private pasteWindow = 0; // timestamp; while > now, ignore stray escape/control from paste
+  private onPasteData = (chunk: Buffer) => this.handlePasteChunk(chunk);
 
   constructor(
     private out: NodeJS.WriteStream,
@@ -75,6 +78,11 @@ export class Modal {
       this.enterPage(root);
       // Enter Alternate Screen Buffer, hide cursor, home cursor
       this.out.write('\x1b[?1049h\x1b[H\x1b[?25l');
+      if (this.stdin.isTTY) this.stdin.setRawMode(true);
+      // prepend so this listener runs BEFORE the REPL's own 'data' listener.
+      // That way the closing Enter is consumed here (and modalJustClosed is
+      // set) before the REPL's onData can see it and auto-start a turn.
+      this.stdin.prependListener('data', this.onPasteData);
       this.render();
     });
   }
@@ -123,6 +131,8 @@ export class Modal {
 
   handleKey(_ch: string | undefined, key: any): void {
     if (this.busy) return;
+    // Ignore stray escape/control chars emitted as part of a paste chunk.
+    if (Date.now() <= this.pasteWindow) return;
     const p = this.page;
     const name = key?.name;
     const ctrl = !!key?.ctrl;
@@ -235,10 +245,46 @@ export class Modal {
   private finish(o: ModalOutcome): void {
     const r = this.resolveFn;
     this.resolveFn = null;
+    this.stdin.removeListener('data', this.onPasteData);
     // Exit Alternate Screen Buffer, restore cursor
     this.out.write('\x1b[?1049l\x1b[?25h');
     this.onClose?.();
     r?.(o);
+  }
+
+  /**
+   * Intercept pasted text so it lands in the field intact.
+   * In raw mode the REPL can't rely on the keypress stream for pastes —
+   * a paste arrives as a single chunk wrapped in bracketed-paste markers
+   * (\x1b[200~ ... \x1b[201~) and the embedded escape chars would otherwise
+   * trigger `escape` → back() and cancel the modal. We capture the real
+   * text here, append it to the active field, and arm a short window so the
+   * stray keypress events from the same paste are ignored.
+   */
+  private handlePasteChunk(chunk: Buffer): void {
+    const str = chunk.toString();
+    if (str.includes('\x1b[200~')) {
+      this.pasteWindow = Date.now() + 60;
+    }
+    if (Date.now() <= this.pasteWindow) {
+      const cleaned = str
+        .replace(/\x1b\[20[01]~/g, '')
+        .replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '');
+      if (cleaned) {
+        const p = this.page;
+        if (p.kind === 'input') {
+          this.inputValue += cleaned;
+          this.render();
+        } else if (p.kind === 'list' && p.searchable) {
+          this.search += cleaned;
+          this.index = 0;
+          this.scrollTop = 0;
+          this.render();
+        }
+      }
+      if (str.includes('\x1b[201~')) this.pasteWindow = 0;
+      return;
+    }
   }
 
   /* ---- Rendering ------------------------------------------------ */
@@ -283,7 +329,7 @@ export class Modal {
     if (searchH) {
       const q = this.search.length ? this.search : (p.kind === 'list' ? 'type to filter…' : '');
       const caret = this.search.length ? '█' : '';
-      const s = '🔍 ' + q + caret + ' '.repeat(Math.max(0, inner - 3 - ('🔍 ' + q + caret).length));
+      const s = '/ ' + q + caret + ' '.repeat(Math.max(0, inner - 3 - ('/ ' + q + caret).length));
       lines.push(bar(ansi.gray(s)));
     }
 
@@ -292,7 +338,13 @@ export class Modal {
       const inputY = Math.floor(bodyH / 2);
       for (let r = 0; r < bodyH; r++) {
         if (r === inputY) {
-          const displayVal = p.secret ? '•'.repeat(this.inputValue.length) : this.inputValue;
+          // Render the value, truncating from the LEFT when it's longer than
+          // the box so a long API key never overflows / wraps the modal.
+          const raw = p.secret ? '•'.repeat(this.inputValue.length) : this.inputValue;
+          const maxChars = Math.max(1, inner - 4); // room for "  " + caret
+          const displayVal = raw.length > maxChars
+            ? '…' + raw.slice(raw.length - (maxChars - 1))
+            : raw;
           const caret = '█';
           const text = '  ' + displayVal + caret;
           const padLen = Math.max(0, inner - 3 - text.length);

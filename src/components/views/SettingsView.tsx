@@ -406,6 +406,7 @@ function knownProviderFor(idOrName: string) {
 function ProviderCard({ provider }: { provider: AIProvider }) {
   const toggleProviderConnected = useSettingsStore((s) => s.toggleProviderConnected);
   const updateProviderApiKey = useSettingsStore((s) => s.updateProviderApiKey);
+  const setProviderModels = useSettingsStore((s) => s.setProviderModels);
   const removeProvider = useSettingsStore((s) => s.removeProvider);
   const isRecommended = provider.id === RECOMMENDED_PROVIDER;
   const isLocal = !!provider.baseUrl && /localhost|127\.0\.0\.1|0\.0\.0\.0|host\.docker\.internal/.test(provider.baseUrl);
@@ -436,7 +437,10 @@ function ProviderCard({ provider }: { provider: AIProvider }) {
       try {
         const models = await listProviderModels(provider.id);
         if (models.length > 0) {
-          toast.success('Key verified', `${provider.name} accepted your key — ${models.length} model(s) available.`);
+          // The provider accepted the key — auto-fetch and add every available
+          // model to the system so the composer can offer the full set.
+          setProviderModels(provider.id, models);
+          toast.success('Key verified', `${provider.name} accepted your key — ${models.length} model(s) added to your system.`);
         } else {
           toast.warning(
             'Key saved, not verified',
@@ -497,13 +501,6 @@ function ProviderCard({ provider }: { provider: AIProvider }) {
         </div>
       </div>
 
-      <div className="provider-card__models">
-        {provider.models.map((m) => (
-          <span key={m} className="provider-chip glass-badge">
-            {m}
-          </span>
-        ))}
-      </div>
 
       {provider.baseUrl && (
         <p className="provider-card__base-url" title={provider.baseUrl}>
@@ -579,6 +576,7 @@ function ProviderCard({ provider }: { provider: AIProvider }) {
 function ProvidersSection() {
   const providers = useSettingsStore((s) => s.providers);
   const addProvider = useSettingsStore((s) => s.addProvider);
+  const setProviderModels = useSettingsStore((s) => s.setProviderModels);
 
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [newProviderName, setNewProviderName] = useState('');
@@ -586,6 +584,8 @@ function ProvidersSection() {
   const [newProviderKind, setNewProviderKind] = useState<'openai-compatible' | 'ollama'>('openai-compatible');
   const [newBaseUrl, setNewBaseUrl] = useState('');
   const [newModelsText, setNewModelsText] = useState('');
+  const [newApiKey, setNewApiKey] = useState('');
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
 
   const resetForm = () => {
     setNewProviderName('');
@@ -593,18 +593,20 @@ function ProvidersSection() {
     setNewProviderKind('openai-compatible');
     setNewBaseUrl('');
     setNewModelsText('');
+    setNewApiKey('');
   };
 
   const isLocalBase = /localhost|127\.0\.0\.1|0\.0\.0\.0|host\.docker\.internal/.test(newBaseUrl);
 
-  const handleAddProvider = () => {
+  const handleAddProvider = async () => {
     const name = newProviderName.trim();
     const rawId = newProviderId.trim().toLowerCase();
     const modelsText = newModelsText.trim();
     const baseUrl = newBaseUrl.trim().replace(/\/+$/, '');
+    const apiKey = newApiKey.trim();
 
-    if (!name || !rawId || !modelsText) {
-      toast.warning('Incomplete form', 'Please fill in all provider fields.');
+    if (!name || !rawId) {
+      toast.warning('Incomplete form', 'Please fill in the provider name and ID.');
       return;
     }
     if (newProviderKind === 'openai-compatible' && !baseUrl) {
@@ -619,31 +621,58 @@ function ProvidersSection() {
       return;
     }
 
-    const models = modelsText
+    // Manual models are optional now — if provided we seed the list, otherwise
+    // we start empty and auto-fetch the live catalogue below.
+    const manualModels = modelsText
       .split(',')
       .map((m) => m.trim())
       .filter(Boolean);
 
-    if (models.length === 0) {
-      toast.warning('No models list', 'Please add at least one model name.');
-      return;
-    }
+    const hasKey = newProviderKind === 'ollama' || isLocalBase || apiKey.length > 0;
 
     const newProvider: AIProvider = {
       id: cleanId,
       name: name,
       kind: newProviderKind,
       ...(baseUrl ? { baseUrl } : {}),
-      isConfigured: newProviderKind === 'ollama' || isLocalBase,
+      isConfigured: hasKey,
       isConnected: false,
-      models: models,
-      apiKeySet: newProviderKind === 'ollama' || isLocalBase,
+      models: manualModels,
+      apiKeySet: hasKey,
     };
+
+    // Persist the key (if any) into the key vault so listProviderModels can
+    // authenticate against the endpoint.
+    if (apiKey) setApiKey(cleanId, apiKey);
 
     addProvider(newProvider);
     setAddModalOpen(false);
     resetForm();
     toast.success('Provider added', `Custom provider "${name}" has been registered.`);
+
+    // Auto-fetch the live model catalogue from the provider and add every
+    // available model to the system (same behaviour as the key-accept flow).
+    if (baseUrl || newProviderKind === 'ollama') {
+      setIsFetchingModels(true);
+      try {
+        const models = await listProviderModels(cleanId);
+        if (models.length > 0) {
+          setProviderModels(cleanId, models);
+          toast.success('Models fetched', `${name} accepted the connection — ${models.length} model(s) added to your system.`);
+        } else if (manualModels.length === 0) {
+          toast.warning(
+            'No models returned',
+            `${name} did not return any models. Add them manually in its settings.`,
+          );
+        }
+      } catch (e: any) {
+        if (manualModels.length === 0) {
+          toast.error('Could not fetch models', `${name} responded: ${e?.message || 'unknown error'}.`);
+        }
+      } finally {
+        setIsFetchingModels(false);
+      }
+    }
   };
 
   return (
@@ -731,11 +760,26 @@ function ProvidersSection() {
             </div>
           )}
 
+          {newProviderKind === 'openai-compatible' && (
+            <div className="secret-form__field">
+              <label className="secret-form__label">API Key (optional)</label>
+              <Input
+                icon={<KeyRound size={14} />}
+                type="password"
+                placeholder="Leave blank for keyless / local gateways"
+                value={newApiKey}
+                onChange={(e) => setNewApiKey(e.target.value)}
+              />
+            </div>
+          )}
+
           <div className="secret-form__field">
-            <label className="secret-form__label">Models (Comma-separated)</label>
+            <label className="secret-form__label">
+              Models (Comma-separated, optional)
+            </label>
             <Input
               icon={<Sparkles size={14} />}
-              placeholder="e.g. llama3-70b, mixtral-8x7b"
+              placeholder="Auto-fetched if left blank — e.g. llama3-70b, mixtral-8x7b"
               value={newModelsText}
               onChange={(e) => setNewModelsText(e.target.value)}
             />
@@ -745,8 +789,8 @@ function ProvidersSection() {
             <Button variant="ghost" onClick={() => { setAddModalOpen(false); resetForm(); }}>
               Cancel
             </Button>
-            <Button variant="primary" icon={<Plus size={14} />} onClick={handleAddProvider}>
-              Add Provider
+            <Button variant="primary" icon={<Plus size={14} />} onClick={handleAddProvider} disabled={isFetchingModels}>
+              {isFetchingModels ? 'Adding…' : 'Add Provider'}
             </Button>
           </div>
         </div>

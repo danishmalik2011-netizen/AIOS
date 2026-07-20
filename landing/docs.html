@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AIOS Documentation — Complete guide to local-first AI coding fleet, CLI commands, and workspaces configuration." />
+  <meta name="theme-color" content="#0d1018" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=1.0.3" />
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=1.0.3" />
+  <link rel="shortcut icon" type="image/x-icon" href="assets/favicon.ico?v=1.0.3" />
+  <link rel="apple-touch-icon" href="assets/logo.png?v=1.0.3" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=1.0.3" />
+  <title>AIOS | Documentation</title>
+  <style>
+    /* Documentation Page Layout Tweaks */
+    .docs-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: calc(var(--space-16) + 4.5rem) var(--space-6) var(--space-16);
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: var(--space-8);
+      position: relative;
+    }
+    
+    .docs-sidebar {
+      position: sticky;
+      top: 7rem;
+      height: fit-content;
+      max-height: calc(100vh - 10rem);
+      overflow-y: auto;
+      padding-right: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+    
+    .docs-sidebar-section h3 {
+      font-size: var(--text-xs);
+      font-weight: var(--font-bold);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin: 0 0 var(--space-2);
+    }
+    
+    .docs-sidebar-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .docs-sidebar-link {
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color var(--duration-fast);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .docs-sidebar-link:hover, .docs-sidebar-link.active {
+      color: var(--accent-primary);
+      font-weight: 500;
+    }
+    
+    .docs-content {
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+      text-align: left;
+    }
+    
+    .docs-section {
+      scroll-margin-top: 7rem;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 2.5rem;
+    }
+    
+    .docs-section:last-child {
+      border-bottom: none;
+    }
+    
+    .docs-section h2 {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-extrabold);
+      color: var(--text-primary);
+      margin: 0 0 1rem;
+      letter-spacing: -0.02em;
+    }
+    
+    .docs-section h3 {
+      font-size: var(--text-lg);
+      font-weight: var(--font-bold);
+      color: var(--text-primary);
+      margin: 1.5rem 0 0.75rem;
+    }
+    
+    .docs-section p {
+      font-size: var(--text-base);
+      line-height: 1.6;
+      color: var(--text-secondary);
+      margin: 0 0 1.25rem;
+    }
+    
+    .docs-section code {
+      background: var(--bg-secondary);
+      color: var(--accent-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.9em;
+    }
+    
+    .docs-section pre {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      padding: 1.25rem;
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      color: var(--text-primary);
+      margin: 1.25rem 0;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+    
+    .flag-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.25rem 0;
+      font-size: var(--text-sm);
+    }
+    
+    .flag-table th, .flag-table td {
+      border: 1px solid var(--border-default);
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+    
+    .flag-table th {
+      background: var(--bg-secondary);
+      font-weight: var(--font-bold);
+      color: var(--text-primary);
+    }
+    
+    .flag-table td {
+      color: var(--text-secondary);
+    }
+    
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+    
+    .role-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .role-title {
+      font-weight: var(--font-bold);
+      color: var(--text-primary);
+      font-size: var(--text-sm);
+    }
+    
+    .role-desc {
+      font-size: var(--text-xs);
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+    
+    @media (max-width: 900px) {
+      .docs-container {
+        grid-template-columns: 1fr;
+        padding-top: calc(var(--space-12) + 5.5rem);
+      }
+      .docs-sidebar {
+        display: none; /* Hide sticky sidebar on small screens */
+      }
+      .role-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+      </symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="6" x2="20" y2="6"/>
+        <line x1="4" y1="12" x2="20" y2="12"/>
+        <line x1="4" y1="18" x2="20" y2="18"/>
+      </symbol>
+    </defs>
+  </svg>
+  <div class="page">
+    <!-- Navigation -->
+    <header class="nav" role="banner">
+      <div class="nav__inner">
+        <a href="/" class="brand" aria-label="AIOS Home" style="display: flex; align-items: center; gap: 0.75rem;">
+          <svg viewBox="0 0 120 120" width="32" height="32" fill="var(--text-primary)">
+            <polygon points="35,10 110,10 110,85 85,110 10,110 10,35" fill="var(--accent-primary)" />
+            <polygon points="35,22 98,22 98,85 85,98 22,98 22,35" fill="var(--bg-primary)" />
+            <polygon points="45,35 85,35 85,75 75,85 35,85 35,45" fill="var(--text-primary)" />
+          </svg>
+          <span class="brand__name" style="font-family: var(--font-mono); font-weight: 900; font-size: 1.5rem; letter-spacing: 0.1em; color: var(--text-primary);">AIOS</span>
+        </a>
+
+        <nav class="nav__links" aria-label="Main navigation">
+          <a href="/#features">Features</a>
+          <a href="/#workspaces">Workspaces</a>
+          <a href="docs.html" class="active" style="color: var(--accent-primary); font-weight: 600;">Docs</a>
+          <a href="/#download">Download</a>
+          <a href="privacy.html">Privacy Policy</a>
+          <button class="nav__link nav__link--theme" id="theme-toggle" aria-label="Toggle theme" type="button">
+            <svg class="ico" aria-hidden="true"><use href="#i-sun" /></svg>
+            <svg class="ico" aria-hidden="true"><use href="#i-moon" /></svg>
+          </button>
+        </nav>
+
+        <a class="nav__cta" href="/#download" style="background: var(--accent-primary); color: white; border: none; border-radius: var(--radius-sm); font-size: 9px; font-weight: var(--font-bold); padding: 4px 10px; cursor: pointer;">
+          <span>Get Started</span>
+        </a>
+
+        <button class="nav__menu" id="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
+          <svg class="ico" aria-hidden="true"><use href="#i-menu" /></svg>
+        </button>
+      </div>
+
+      <div class="nav__mobile" id="mobile-menu" aria-hidden="true">
+        <a href="/#features">Features</a>
+        <a href="/#workspaces">Workspaces</a>
+        <a href="docs.html" style="color: var(--accent-primary); font-weight: bold;">Docs</a>
+        <a href="/#download">Download</a>
+        <a href="privacy.html">Privacy Policy</a>
+      </div>
+    </header>
+
+    <!-- Main Docs Grid -->
+    <div class="docs-container">
+      <!-- Sidebar Navigation -->
+      <aside class="docs-sidebar">
+        <div class="docs-sidebar-section">
+          <h3>Getting Started</h3>
+          <div class="docs-sidebar-links">
+            <a href="#intro" class="docs-sidebar-link active">Introduction</a>
+            <a href="#installation" class="docs-sidebar-link">Installation</a>
+            <a href="#setup" class="docs-sidebar-link">BYOK Credentials</a>
+          </div>
+        </div>
+        <div class="docs-sidebar-section">
+          <h3>CLI & API Reference</h3>
+          <div class="docs-sidebar-links">
+            <a href="#cli-syntax" class="docs-sidebar-link">CLI Commands</a>
+            <a href="#agent-fleet" class="docs-sidebar-link">Agent Fleet Roles</a>
+            <a href="#repl-commands" class="docs-sidebar-link">REPL Slash Commands</a>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Docs Content -->
+      <main class="docs-content">
+        <!-- Section: Intro -->
+        <section id="intro" class="docs-section">
+          <h2>Introduction</h2>
+          <p>AIOS (AI Agent Operating System) is a complete, local-first AI software development environment. Unlike other AI agents that upload your source files to remote clouds, AIOS coordinates tool runs and compiles your code completely on your local machine.</p>
+          <p>Bring your own API keys (BYOK), enforce strict local execution sandboxes, and run multiple specialized agents in a background loop. AIOS runs with zero telemetry—your files, prompts, and tokens never leave your storage.</p>
+        </section>
+
+        <!-- Section: Installation -->
+        <section id="installation" class="docs-section">
+          <h2>Installation</h2>
+          <p>To initialize the global CLI, run the NPM package link or fetch the desktop package installer directly:</p>
+          <pre><code>$ npm install -g aios</code></pre>
+          <p>Verify that your configuration environment works by querying the system version:</p>
+          <pre><code>$ aios --version
+aios v1.3.4</code></pre>
+          <p>Windows users can also download the signed desktop installer from the downloads section on the landing page, which houses the desktop canvas and active directory configuration panels.</p>
+        </section>
+
+        <!-- Section: Setup -->
+        <section id="setup" class="docs-section">
+          <h2>BYOK Credentials & Settings</h2>
+          <p>Your workspace preferences, agent presets, and API keys are stored securely inside your user directory:</p>
+          <pre><code>~/.aios/config.json</code></pre>
+          <p>On initial launch, AIOS prompts you to enter your credentials. You can also configure them manually by editing the config JSON or running the <code>/provider</code> command inside the REPL loop.</p>
+          <p>Active session history state metrics are cached inside <code>~/.aios/sessions/&lt;hash&gt;.json</code>, where the session ID matches the SHA-256 hash of your active project root folder.</p>
+        </section>
+
+        <!-- Section: CLI Syntax -->
+        <section id="cli-syntax" class="docs-section">
+          <h2>CLI Flags & Syntax</h2>
+          <p>AIOS accepts various command-line options to modify execution flow. Pass prompt strings directly for single-turn modifications, or launch without parameters to open the REPL shell.</p>
+          <table class="flag-table">
+            <thead>
+              <tr>
+                <th>Flag</th>
+                <th>Description</th>
+                <th>Syntax Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>-y</code>, <code>--yes</code></td>
+                <td>Bypasses manual tool execution prompts. Grant auto-approvals.</td>
+                <td><code>aios -y "fix type errors"</code></td>
+              </tr>
+              <tr>
+                <td><code>-r</code>, <code>--root</code></td>
+                <td>Manually set the target workspace project root directory.</td>
+                <td><code>aios -r ./packages/server</code></td>
+              </tr>
+              <tr>
+                <td><code>-m</code>, <code>--model</code></td>
+                <td>Specify the LLM model target override for this execution.</td>
+                <td><code>aios -m claude-3-5-sonnet</code></td>
+              </tr>
+              <tr>
+                <td><code>-h</code>, <code>--help</code></td>
+                <td>Lists all command arguments and global system flags.</td>
+                <td><code>aios --help</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Section: Agent Fleet -->
+        <section id="agent-fleet" class="docs-section">
+          <h2>Agent Fleet Roles</h2>
+          <p>AIOS splits software creation tasks among multiple specialized agent roles, orchestrated by a central coordinator:</p>
+          <div class="role-grid">
+            <div class="role-card">
+              <span class="role-title">Director</span>
+              <span class="role-desc">Coordinates the main loop, maps workspace file trees, and delegates checklist tasks.</span>
+            </div>
+            <div class="role-card">
+              <span class="role-title">Architect</span>
+              <span class="role-desc">Researches codebase syntax, creates checklists, and plans file modifications.</span>
+            </div>
+            <div class="role-card">
+              <span class="role-title">CodeSmith</span>
+              <span class="role-desc">Executes precise file edits, appends incremental lines, and writes code.</span>
+            </div>
+            <div class="role-card">
+              <span class="role-title">Sentinel</span>
+              <span class="role-desc">Validates build flags, reviews compiler logs, and checks git diff states.</span>
+            </div>
+            <div class="role-card">
+              <span class="role-title">TestRunner</span>
+              <span class="role-desc">Runs localized test suites to ensure changes do not break existing regressions.</span>
+            </div>
+            <div class="role-card">
+              <span class="role-title">DeployBot</span>
+              <span class="role-desc">Automates build caching and updates installer bundles for release updates.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section: REPL Commands -->
+        <section id="repl-commands" class="docs-section">
+          <h2>REPL Slash Commands</h2>
+          <p>When running in interactive REPL mode, you can control the environment state with the following slash commands:</p>
+          <table class="flag-table">
+            <thead>
+              <tr>
+                <th>Command</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>/model &lt;id&gt;</code></td>
+                <td>Swap the current execution LLM model model immediately.</td>
+              </tr>
+              <tr>
+                <td><code>/provider</code></td>
+                <td>Configure model provider endpoint URLs and local API keys.</td>
+              </tr>
+              <tr>
+                <td><code>/status</code></td>
+                <td>Queries active agent fleet states and mapped directories.</td>
+              </tr>
+              <tr>
+                <td><code>/tokens</code></td>
+                <td>Displays accumulated prompt, output, and cache token statistics.</td>
+              </tr>
+              <tr>
+                <td><code>/clear</code></td>
+                <td>Wipes the interactive screen console logs.</td>
+              </tr>
+              <tr>
+                <td><code>/exit</code></td>
+                <td>Saves local session history states and exits the shell.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo" style="border-top: 1px solid var(--border-default);">
+      <div class="footer__inner">
+        <div class="footer__brand">
+          <svg viewBox="0 0 120 120" width="24" height="24" fill="currentColor">
+            <polygon points="35,10 110,10 110,85 85,110 10,110 10,35" fill="var(--accent-primary)" />
+            <polygon points="35,22 98,22 98,85 85,98 22,98 22,35" fill="var(--bg-primary)" />
+            <polygon points="45,35 85,35 85,75 75,85 35,85 35,45" fill="currentColor" />
+          </svg>
+          <span style="font-family: var(--font-mono); font-weight: bold; font-size: 1.1rem; color: var(--text-primary);">AIOS</span>
+        </div>
+        <div class="footer__links">
+          <a href="/#features" class="footer__link">Features</a>
+          <a href="/#workspaces" class="footer__link">Workspaces</a>
+          <a href="docs.html" class="footer__link">Docs</a>
+          <a href="privacy.html" class="footer__link">Privacy Policy</a>
+        </div>
+        <span class="footer__copy">&copy; 2026 AIOS. Local execution, zero telemetry.</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script>
+    // Handle docs sidebar active links highlighting on scroll
+    document.addEventListener('DOMContentLoaded', () => {
+      const sidebarLinks = document.querySelectorAll('.docs-sidebar-link');
+      const sections = document.querySelectorAll('.docs-section');
+      
+      function highlightActiveSection() {
+        let currentSectionId = '';
+        sections.forEach(sec => {
+          const rect = sec.getBoundingClientRect();
+          if (rect.top <= 150) {
+            currentSectionId = sec.id;
+          }
+        });
+        
+        sidebarLinks.forEach(link => {
+          const isActive = link.getAttribute('href') === '#' + currentSectionId;
+          link.classList.toggle('active', isActive);
+        });
+      }
+      
+      window.addEventListener('scroll', highlightActiveSection, { passive: true });
+      highlightActiveSection();
+    });
+  </script>
+</body>
+</html>

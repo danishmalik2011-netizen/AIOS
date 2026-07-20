@@ -8,6 +8,9 @@ import { registerGitHandlers } from './ipc/git.js';
 import { registerPtyHandlers, killAllPtys } from './ipc/pty.js';
 import { registerShellHandlers } from './ipc/shell.js';
 import { registerSecretsHandlers } from './ipc/secrets.js';
+import { registerWebHandlers } from './ipc/web.js';
+import { registerTtsHandlers } from './ipc/tts.js';
+import { registerSttHandlers } from './ipc/stt.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -41,9 +44,9 @@ function createWindow(): void {
     },
   });
 
-  // Approve media/audioCapture requests for speech-to-text to work
+  // Approve media requests for speech-to-text to work
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    if (permission === 'media' || permission === 'audioCapture') {
+    if (permission === 'media') {
       callback(true);
     } else {
       callback(false);
@@ -171,6 +174,9 @@ app.whenReady().then(() => {
   registerPtyHandlers();
   registerShellHandlers();
   registerSecretsHandlers();
+  registerWebHandlers();
+  registerTtsHandlers();
+  registerSttHandlers();
   setupAutoUpdater(() => mainWindow);
 
   createWindow();

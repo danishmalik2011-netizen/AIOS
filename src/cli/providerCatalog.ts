@@ -127,6 +127,13 @@ export const PROVIDER_CATALOG: CatalogProvider[] = [
   { id: 'apika', name: 'Apika AI', kind: 'openai-compatible', baseUrl: 'https://api.apika.ai/v1', defaultModels: ['llama-3.3-70b', 'deepseek-v3'] },
   { id: 'thinkfunction', name: 'ThinkFunction', kind: 'openai-compatible', baseUrl: 'https://api.thinkfunction.ai/v1', defaultModels: ['llama-3.3-70b', 'qwen2.5-72b'] },
 
+  // ---- LLM router / proxy ----
+  // AgentRouter is an OpenAI-compatible LLM routing gateway. The base URL below
+  // is the hosted endpoint; supply an API key (AIOS_API_KEY_AGENTROUTER or the
+  // in-app vault) and the live /models list replaces `defaultModels`.
+  { id: 'agentrouter', name: 'AgentRouter', kind: 'openai-compatible', baseUrl: 'https://agentrouter.org/v1', defaultModels: ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet', 'google/gemini-2.5-pro', 'meta-llama/llama-3.3-70b-instruct'], tier: 'aggregator', costTier: 'medium', popularity: 6, tags: ['aggregator', 'router', 'openai-compatible'] },
+  { id: 'solenne', name: 'Solenne Cloud', kind: 'openai-compatible', baseUrl: 'https://solenne.cloud/api/v1', defaultModels: ['gpt-4o', 'gpt-4o-mini', 'claude-3-5-sonnet', 'llama-3.3-70b'], tier: 'aggregator', costTier: 'medium', popularity: 6, tags: ['aggregator', 'cloud', 'openai-compatible'] },
+
   // ---- Specialised coding ----
   { id: 'codestral', name: 'Codestral (Mistral)', kind: 'openai-compatible', baseUrl: 'https://codestral.mistral.ai/v1', defaultModels: ['codestral-latest'] },
   { id: 'codeium', name: 'Codeium (Code Completion)', kind: 'openai-compatible', baseUrl: 'https://api.codeium.com/v1', defaultModels: ['codeium'] },

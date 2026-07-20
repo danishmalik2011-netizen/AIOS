@@ -55,13 +55,31 @@ function toAnthropicMessages(messages: ProviderMessage[]): Array<Record<string, 
 const ENDPOINT = 'https://api.anthropic.com/v1/messages';
 const API_VERSION = '2023-06-01';
 
+// Real, currently-available Anthropic model ids (latest generation first,
+// then older generations). The live /models fetch replaces this list whenever
+// a valid key is present; this is only the offline fallback.
 const MODELS = [
+  // Claude 4 (latest)
+  'claude-opus-4-20250514',
+  'claude-sonnet-4-20250514',
+  'claude-opus-4-0',
+  'claude-sonnet-4-0',
+  // Claude 3.7
+  'claude-3-7-sonnet-20250219',
+  'claude-3-7-sonnet-latest',
+  // Claude 3.5
   'claude-3-5-sonnet-20241022',
+  'claude-3-5-sonnet-latest',
   'claude-3-5-haiku-20241022',
+  'claude-3-5-haiku-latest',
+  // Claude 3
   'claude-3-opus-20240229',
-  'claude-opus-4-8',
-  'claude-sonnet-5',
-  'claude-haiku-4-5-20251001'
+  'claude-3-sonnet-20240229',
+  'claude-3-haiku-20240307',
+  // Older generations (still served)
+  'claude-2.1',
+  'claude-2',
+  'claude-instant-1.2',
 ];
 
 export const anthropicDriver: ProviderDriver = {
@@ -73,7 +91,11 @@ export const anthropicDriver: ProviderDriver = {
     if (!key) return MODELS;
     try {
       const res = await fetch('https://api.anthropic.com/v1/models', {
-        headers: { 'x-api-key': key, 'anthropic-version': API_VERSION },
+        headers: {
+          'x-api-key': key,
+          'anthropic-version': API_VERSION,
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
       });
       if (res.ok) {
         const data = await res.json();
@@ -117,7 +139,7 @@ export const anthropicDriver: ProviderDriver = {
       },
       body: JSON.stringify({
         model: req.model,
-        max_tokens: req.maxTokens ?? 1024,
+        max_tokens: req.maxTokens ?? 8192,
         temperature: req.temperature ?? 0.7,
         system,
         messages,

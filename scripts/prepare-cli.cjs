@@ -6,6 +6,16 @@
 
 const { spawnSync } = require('child_process');
 const path = require('path');
+const fs = require('fs');
+
+// The CLI is pre-bundled (dist-cli/aios.cjs) and shipped in the npm tarball,
+// so a fresh install does NOT need to rebuild it. Only rebuild when the bundle
+// is missing (e.g. working from a git checkout) and esbuild is available.
+const bundle = path.resolve(__dirname, '..', 'dist-cli', 'aios.cjs');
+if (fs.existsSync(bundle)) {
+  console.log('[aios] CLI bundle present — skipping prepare build.');
+  process.exit(0);
+}
 
 const res = spawnSync('node', [path.join(__dirname, 'build-cli.cjs')], {
   stdio: 'inherit',

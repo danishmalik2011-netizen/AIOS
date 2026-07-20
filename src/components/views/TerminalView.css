@@ -429,10 +429,15 @@
   height: 100%;
 }
 
-/* Enable custom scrollbar inside xterm viewport */
+/* Custom scrollbar styling for the xterm viewport.
+   IMPORTANT: do NOT force `overflow-y: scroll` or `pointer-events` here.
+   xterm.js manages its own viewport scrolling and mouse/wheel handling.
+   Forcing native `overflow-y: scroll` + `pointer-events: auto` makes the
+   browser's native scrollbar fight xterm's internal scroll/wheel handling,
+   which (a) breaks mouse clicks/scroll inside the terminal and (b) causes
+   xterm to mis-parse SGR mouse-report sequences and print them as literal
+   garbage (the repeated `6` characters). Let xterm own the viewport. */
 .terminal__xterm .xterm-viewport {
-  overflow-y: scroll !important; /* Force scrollbar always visible to prevent column shifting and layout breaks */
-  pointer-events: auto !important;
   scrollbar-width: thin !important;
   scrollbar-color: var(--border-strong) transparent !important;
 }

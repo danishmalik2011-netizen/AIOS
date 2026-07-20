@@ -100,6 +100,7 @@ export function Sidebar() {
     settings: false,
     notifications: false,
     account: false,
+    web: false,
   });
 
   const toggleSection = (id: SidebarView) => {

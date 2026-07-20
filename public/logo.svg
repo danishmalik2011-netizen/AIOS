@@ -1,5 +1,10 @@
-<svg viewBox="0 0 120 120" width="100%" height="100%" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-  <polygon points="35,10 110,10 110,85 85,110 10,110 10,35" fill="#f03e3e" />
-  <polygon points="35,22 98,22 98,85 85,98 22,98 22,35" fill="#0b0f19" />
-  <polygon points="45,35 85,35 85,75 75,85 35,85 35,45" fill="#ffffff" />
+<svg viewBox="0 0 120 120" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer red beveled hexagon (the "A" shield) -->
+  <polygon points="60,6 110,34 110,86 60,114 10,86 10,34" fill="#f03e3e"/>
+  <!-- Dark inner hexagon -->
+  <polygon points="60,18 99,40 99,80 60,102 21,80 21,40" fill="#0b0f19"/>
+  <!-- White inner hexagon (the "A" counter / core) -->
+  <polygon points="60,30 88,46 88,74 60,90 32,74 32,46" fill="#ffffff"/>
+  <!-- Red "A" apex notch cut into the white core to read as a letter A -->
+  <polygon points="60,38 73,62 60,62 60,74 47,74 60,50" fill="#0b0f19"/>
 </svg>

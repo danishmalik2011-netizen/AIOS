@@ -84,6 +84,18 @@ const api = {
     has: (key: string): Promise<boolean> => ipcRenderer.invoke(CHANNELS.secretsHas, key),
   },
 
+  web: {
+    search: (params: {
+      query: string;
+      engine?: 'ddg' | 'bing' | 'url';
+      limit?: number;
+      timeout?: number;
+      url?: string;
+      token?: string;
+    }): Promise<{ results: { title: string; url: string; snippet: string }[]; error?: string; engine: string }> =>
+      ipcRenderer.invoke(CHANNELS.webSearch, params),
+  },
+
   updater: {
     checkForUpdates: (): Promise<void> => ipcRenderer.invoke('updater:check'),
     downloadUpdate: (): Promise<void> => ipcRenderer.invoke('updater:download'),
@@ -98,6 +110,24 @@ const api = {
   clipboard: {
     readText: (): string => clipboard.readText(),
     writeText: (text: string): void => clipboard.writeText(text),
+  },
+
+  tts: {
+    speak: (params: { text: string; rate?: number }): Promise<{ ok: boolean; error?: string; engine?: string }> =>
+      ipcRenderer.invoke(CHANNELS.ttsSpeak, params),
+    cancel: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(CHANNELS.ttsCancel),
+    onEnd: (callback: (payload: { error?: string }) => void) => {
+      const handler = (_e: unknown, payload: { error?: string }) => callback(payload);
+      ipcRenderer.on(CHANNELS.ttsEnd, handler);
+      return () => {
+        ipcRenderer.removeListener(CHANNELS.ttsEnd, handler);
+      };
+    },
+  },
+  stt: {
+    /** Offline, OS-native one-shot transcription (Windows SAPI). */
+    transcribe: (): Promise<{ ok: boolean; text?: string; error?: string; engine?: string }> =>
+      ipcRenderer.invoke(CHANNELS.sttTranscribe),
   },
 };
 

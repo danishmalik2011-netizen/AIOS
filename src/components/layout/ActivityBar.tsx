@@ -15,6 +15,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Boxes,
+  Globe,
 } from 'lucide-react';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import type { SidebarView } from '@/core/types';
@@ -39,6 +40,7 @@ const topItems: NavItem[] = [
   { id: 'terminal',  icon: Terminal,         label: 'Terminal' },
   { id: 'workspaces',icon: Boxes,            label: 'Workspaces' },
   { id: 'prompts',   icon: BookOpen,         label: 'Prompts' },
+  { id: 'web',       icon: Globe,            label: 'Web Search' },
   { id: 'settings',  icon: Settings,         label: 'Settings' },
 ];
 
